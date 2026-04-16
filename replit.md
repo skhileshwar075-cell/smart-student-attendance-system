@@ -297,4 +297,18 @@ In-app (DB-backed) notifications always work regardless of Firebase.
 
 ---
 
-*Last updated: April 2026 | Version 2.3*
+## Bug Fixes Applied (April 2026 QA Pass)
+
+| ID | Severity | Fix Summary |
+|----|----------|-------------|
+| BUG-01 | Critical | `server/routes/student.js`: Removed fallback in session lock — 403 is now returned if no active academic session exists, preventing lock bypass |
+| BUG-02 | High | `server/routes/admin.js`: Removed duplicate academic-sessions and promote route blocks; kept the superior set (audit logging, atomic SQL, DELETE endpoint) |
+| BUG-03 | Medium | `server/routes/admin.js`: Added `AND current_session != $2` to promote SQL, preventing students already in the target session from being promoted again |
+| BUG-04 | Medium | `server/routes/student.js`: Mark-attendance response now includes `semester` and `session` fields |
+| BUG-05 | Medium | `server/routes/admin.js`: Promote endpoint now runs inside a `withTransaction` wrapper (BEGIN/COMMIT/ROLLBACK) with in-transaction notifications |
+| BUG-06 | Low | `server/index.js`: Auth rate limiter raised from 20 → 100 requests per 15 min |
+| BUG-07 | Low | `client/src/pages/admin/Reports.jsx`: Added Session and Semester filter dropdowns (wired to existing backend query params) |
+
+A `withTransaction(fn)` helper was added to `server/db/database.js` and exported alongside `query`.
+
+*Last updated: April 2026 | Version 2.4*

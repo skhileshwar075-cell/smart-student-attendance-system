@@ -1,0 +1,216 @@
+Act as a senior full stack developer.
+
+Fix all identified bugs and add minimal UI for Academic Session & Student Promotion testing.
+
+---
+
+## ⚠️ Rules
+
+* Do NOT break existing features
+* Do NOT redesign UI
+* Apply minimal and safe changes
+* Keep backend stable and optimized
+
+---
+
+# 🔴 BACKEND BUG FIXES
+
+---
+
+## 1. CRITICAL — Attendance Lock Bypass
+
+File: student.js
+
+Fix:
+
+* If no active session exists → block attendance
+
+Logic:
+
+IF no active session:
+return error "No active academic session"
+
+Ensure:
+
+* No fallback to student.current_session
+* Strict validation
+
+---
+
+## 2. HIGH — Duplicate Routes (admin.js)
+
+Fix:
+
+* Remove duplicate route definitions:
+
+  * GET /academic-sessions
+  * POST /academic-sessions
+  * PUT /academic-sessions/:id/activate
+  * POST /promote
+
+Keep BEST version only:
+
+* Must include:
+  ✔ Validation
+  ✔ Audit logs
+  ✔ Proper ordering
+  ✔ Transaction support
+
+---
+
+## 3. MEDIUM — Promotion Transaction
+
+Fix promote API:
+
+* Wrap entire promotion in DB transaction:
+
+BEGIN
+UPDATE students
+INSERT notifications
+COMMIT
+
+If error:
+ROLLBACK
+
+---
+
+## 4. MEDIUM — Prevent Double Promotion
+
+Fix:
+
+* Before promoting, check:
+
+IF student.current_session == new_session:
+skip OR return error
+
+---
+
+## 5. MEDIUM — Improve Attendance Response
+
+Update response of:
+
+POST /student/attendance/mark
+
+Return:
+
+{
+message,
+semester,
+session,
+anomalyFlag
+}
+
+---
+
+## 6. MEDIUM — Rate Limit Adjustment
+
+Fix auth rate limiter:
+
+* Increase limit OR exclude testing routes
+* Ensure login not blocked during normal usage
+
+---
+
+## 7. LOW — Subject Consistency
+
+Optional:
+
+* Warn if subject semester != student semester
+* OR log warning
+
+---
+
+# 🎯 FRONTEND (WEB) — MINIMAL UI ADDITION
+
+---
+
+## 1. Session Management (Admin)
+
+Add:
+
+* Dropdown: list sessions
+* Show active session
+* Button: "Create Session"
+* Button: "Activate"
+
+Use APIs:
+
+* GET /admin/academic-sessions
+* POST /admin/academic-sessions
+* PUT /admin/academic-sessions/:id/activate
+
+---
+
+## 2. Promotion UI
+
+Add:
+
+* Dropdown: select session
+* Button: "Promote Students"
+* Show success/error message
+
+API:
+
+* POST /admin/promote
+
+---
+
+## 3. Global Session Indicator
+
+* Show active session in:
+
+  * Header OR dashboard
+
+---
+
+## 4. Filters (IMPORTANT)
+
+Add dropdown filters:
+
+* Semester
+* Session
+
+Apply to:
+
+* Reports
+* Student attendance view
+
+---
+
+## 5. Debug Info (Optional)
+
+Show:
+
+* current semester
+* current session
+
+---
+
+# 🔐 VALIDATION
+
+* Strict RBAC enforced
+* No cross-session data mixing
+* Attendance only for active session
+
+---
+
+# 🧪 TEST AFTER FIX
+
+Verify:
+
+* Session activation works
+* Promotion works once only
+* Attendance blocked without active session
+* Reports correct per session
+* UI reflects session changes
+
+---
+
+# 🎯 OUTPUT
+
+Provide:
+
+* Updated backend code (only changed parts)
+* Fixed APIs
+* Minimal frontend components
+* No unnecessary explanation

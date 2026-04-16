@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { query } = require('../db/database');
+const { query, withTransaction } = require('../db/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { getLowAttendanceShortlist, getClassWiseAnalytics, getSubjectWiseAnalytics, getStudentAnalysis } = require('../services/attendanceService');
 const { createNotification } = require('../services/notificationService');
@@ -478,96 +478,6 @@ router.get('/attendance/low-shortlist', async (req, res) => {
   }
 });
 
-// ─── ACADEMIC SESSIONS ────────────────────────────────────────────────────────
-
-router.get('/academic-sessions', async (req, res) => {
-  try {
-    const result = await query(`SELECT * FROM academic_sessions ORDER BY name DESC`);
-    res.json({ sessions: result.rows });
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-router.post('/academic-sessions', async (req, res) => {
-  try {
-    const { name, start_date, end_date, is_active } = req.body;
-    if (!name || !start_date || !end_date) return res.status(400).json({ error: 'name, start_date, end_date are required' });
-    if (!/^\d{4}-\d{2}$/.test(name)) return res.status(400).json({ error: 'Session name must be in format YYYY-YY (e.g. 2025-26)' });
-    if (is_active) {
-      await query(`UPDATE academic_sessions SET is_active=false WHERE is_active=true`);
-    }
-    const result = await query(
-      `INSERT INTO academic_sessions (name, start_date, end_date, is_active) VALUES ($1,$2,$3,$4) RETURNING *`,
-      [name, start_date, end_date, is_active || false]
-    );
-    await query(`INSERT INTO audit_logs (user_id, action, details) VALUES ($1,'create_academic_session',$2)`, [req.user.id, JSON.stringify({ name })]);
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    if (err.code === '23505') return res.status(400).json({ error: 'Academic session already exists' });
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-router.put('/academic-sessions/:id/activate', async (req, res) => {
-  try {
-    await query(`UPDATE academic_sessions SET is_active=false WHERE is_active=true`);
-    const result = await query(`UPDATE academic_sessions SET is_active=true WHERE id=$1 RETURNING *`, [req.params.id]);
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Academic session not found' });
-    res.json({ message: 'Session activated', session: result.rows[0] });
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// ─── STUDENT PROMOTION ────────────────────────────────────────────────────────
-
-router.post('/promote', async (req, res) => {
-  try {
-    const { new_session, class_id, max_semester } = req.body;
-    if (!new_session) return res.status(400).json({ error: 'new_session is required (e.g. 2025-26)' });
-    if (!/^\d{4}-\d{2}$/.test(new_session)) return res.status(400).json({ error: 'new_session must be in format YYYY-YY' });
-
-    const maxSem = max_semester || 8;
-
-    // Fetch students to promote (not deleted, current_semester < maxSem)
-    const params = [maxSem];
-    let sql = `SELECT id, current_semester, current_session, user_id FROM students WHERE is_deleted=false AND current_semester < $1`;
-    if (class_id) { params.push(class_id); sql += ` AND class_id=$${params.length}`; }
-    const toPromote = await query(sql, params);
-
-    if (toPromote.rows.length === 0) {
-      return res.json({ promoted: 0, message: 'No eligible students to promote' });
-    }
-
-    let promoted = 0;
-    for (const stu of toPromote.rows) {
-      const newSemester = stu.current_semester + 1;
-      await query(
-        `UPDATE students SET current_semester=$1, current_session=$2 WHERE id=$3`,
-        [newSemester, new_session, stu.id]
-      );
-      await query(
-        `INSERT INTO notifications (user_id, title, message, type) VALUES ($1,$2,$3,'system')`,
-        [stu.user_id,
-         'Promoted to Next Semester',
-         `Congratulations! You have been promoted to Semester ${newSemester} for the academic session ${new_session}.`]
-      );
-      promoted++;
-    }
-
-    await query(`INSERT INTO audit_logs (user_id, action, details) VALUES ($1,'promote_students',$2)`, [
-      req.user.id,
-      JSON.stringify({ new_session, promoted, class_id: class_id || 'all' })
-    ]);
-
-    res.json({ promoted, new_session, message: `${promoted} student(s) promoted to ${new_session}` });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
 // ─── SESSION MANAGEMENT (Admin only) ──────────────────────────────────────────
 
 router.get('/sessions', async (req, res) => {
@@ -638,6 +548,7 @@ router.post('/academic-sessions', async (req, res) => {
   try {
     const { name, start_date, end_date, is_active = false } = req.body;
     if (!name || !start_date || !end_date) return res.status(400).json({ error: 'name, start_date, end_date required' });
+    if (!/^\d{4}-\d{2}$/.test(name)) return res.status(400).json({ error: 'Session name must be in format YYYY-YY (e.g. 2025-26)' });
     if (is_active) {
       await query(`UPDATE academic_sessions SET is_active = false`);
     }
@@ -652,6 +563,7 @@ router.post('/academic-sessions', async (req, res) => {
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error(err);
+    if (err.code === '23505') return res.status(400).json({ error: 'Academic session already exists' });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -709,28 +621,46 @@ router.post('/promote', async (req, res) => {
   try {
     const { new_session, class_id, max_semester = 8 } = req.body;
     if (!new_session) return res.status(400).json({ error: 'new_session is required' });
+    if (!/^\d{4}-\d{2}$/.test(new_session)) return res.status(400).json({ error: 'new_session must be in format YYYY-YY (e.g. 2025-26)' });
 
-    let sql = `
-      UPDATE students
-      SET current_semester = LEAST(current_semester + 1, $1),
-          current_session  = $2
-      WHERE is_deleted = false
-        AND current_semester < $1
-    `;
-    const params = [max_semester, new_session];
-    if (class_id) {
-      sql += ` AND class_id = $${params.length + 1}`;
-      params.push(class_id);
-    }
-    sql += ` RETURNING id`;
+    const promoted = await withTransaction(async (client) => {
+      // BUG-03 fix: AND current_session != $2 prevents double-promotion
+      let sql = `
+        UPDATE students
+        SET current_semester = LEAST(current_semester + 1, $1),
+            current_session  = $2
+        WHERE is_deleted = false
+          AND current_semester < $1
+          AND current_session != $2
+      `;
+      const params = [max_semester, new_session];
+      if (class_id) {
+        sql += ` AND class_id = $${params.length + 1}`;
+        params.push(class_id);
+      }
+      sql += ` RETURNING id, user_id, current_semester`;
 
-    const result = await query(sql, params);
-    const promoted = result.rows.length;
+      const result = await client.query(sql, params);
+      const promotedRows = result.rows;
 
-    await query(
-      `INSERT INTO audit_logs (user_id, action, details) VALUES ($1,'bulk_promote_students',$2)`,
-      [req.user.id, JSON.stringify({ promoted, new_session, class_id: class_id || 'all', max_semester })]
-    );
+      for (const stu of promotedRows) {
+        await client.query(
+          `INSERT INTO notifications (user_id, title, message, type) VALUES ($1,$2,$3,'system')`,
+          [
+            stu.user_id,
+            'Promoted to Next Semester',
+            `Congratulations! You have been promoted to Semester ${stu.current_semester} for the academic session ${new_session}.`
+          ]
+        );
+      }
+
+      await client.query(
+        `INSERT INTO audit_logs (user_id, action, details) VALUES ($1,'bulk_promote_students',$2)`,
+        [req.user.id, JSON.stringify({ promoted: promotedRows.length, new_session, class_id: class_id || 'all', max_semester })]
+      );
+
+      return promotedRows.length;
+    });
 
     res.json({ promoted, new_session, message: `${promoted} student(s) promoted to session "${new_session}"` });
   } catch (err) {

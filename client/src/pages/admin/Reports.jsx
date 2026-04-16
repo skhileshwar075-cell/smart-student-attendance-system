@@ -10,13 +10,15 @@ export default function AdminReports() {
   const [records, setRecords] = useState([]);
   const [classes, setClasses] = useState([]);
   const [subjects, setSubjects] = useState([]);
-  const [filters, setFilters] = useState({ from: '', to: '', class_id: '', subject_id: '' });
+  const [sessions, setSessions] = useState([]);
+  const [filters, setFilters] = useState({ from: '', to: '', class_id: '', subject_id: '', session: '', semester: '' });
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     axios.get('/api/admin/classes').then(r => setClasses(r.data.classes || []));
     axios.get('/api/admin/subjects').then(r => setSubjects(r.data.subjects || []));
+    axios.get('/api/admin/academic-sessions').then(r => setSessions(r.data.sessions || []));
   }, []);
 
   const fetchRecords = async () => {
@@ -26,6 +28,8 @@ export default function AdminReports() {
     if (filters.to) params.to = filters.to;
     if (filters.class_id) params.class_id = filters.class_id;
     if (filters.subject_id) params.subject_id = filters.subject_id;
+    if (filters.session) params.session = filters.session;
+    if (filters.semester) params.semester = filters.semester;
     const r = await axios.get('/api/admin/reports', { params });
     setRecords(r.data.records || []);
     setLoading(false);
@@ -144,6 +148,16 @@ export default function AdminReports() {
           <option value="">All Subjects</option>
           {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <select value={filters.session} onChange={e => setFilters(p => ({...p, session: e.target.value}))} className="input-field text-sm">
+            <option value="">All Sessions</option>
+            {sessions.map(s => <option key={s.id} value={s.name}>{s.name}{s.is_active ? ' (Active)' : ''}</option>)}
+          </select>
+          <select value={filters.semester} onChange={e => setFilters(p => ({...p, semester: e.target.value}))} className="input-field text-sm">
+            <option value="">All Semesters</option>
+            {[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>Semester {n}</option>)}
+          </select>
+        </div>
         <button onClick={fetchRecords} className="btn-primary w-full">Generate Report</button>
       </div>
 

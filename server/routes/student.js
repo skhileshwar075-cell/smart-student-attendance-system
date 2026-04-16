@@ -179,11 +179,15 @@ router.post('/attendance/mark', async (req, res) => {
       }
     }
 
-    // Session lock: only allow attendance for the student's current academic session
+    // Session lock: only allow attendance when an active academic session exists
+    // and the student is enrolled in it. BUG-01 fix: no fallback — block when no session is active.
     const activeSessionRow = await query(
       `SELECT name FROM academic_sessions WHERE is_active=true LIMIT 1`
     );
-    const activeSessionName = activeSessionRow.rows[0]?.name || student.current_session;
+    if (activeSessionRow.rows.length === 0) {
+      return res.status(403).json({ error: 'Attendance is locked. No active academic session is set. Contact your administrator.' });
+    }
+    const activeSessionName = activeSessionRow.rows[0].name;
     if (student.current_session !== activeSessionName) {
       return res.status(403).json({ error: `Attendance is locked. You are enrolled in session ${student.current_session} but the active session is ${activeSessionName}.` });
     }
@@ -206,7 +210,13 @@ router.post('/attendance/mark', async (req, res) => {
       'attendance'
     );
 
-    res.json({ message: 'Attendance marked successfully!', faceVerified: face_verified, anomalyFlag });
+    res.json({
+      message: 'Attendance marked successfully!',
+      faceVerified: face_verified,
+      anomalyFlag,
+      semester: student.current_semester,
+      session: student.current_session,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
