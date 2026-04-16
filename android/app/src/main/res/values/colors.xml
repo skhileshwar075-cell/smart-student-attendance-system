@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ── Brand ──────────────────────────────── -->
+    <color name="brand_primary">#2563EB</color>
+    <color name="brand_primary_dark">#1D4ED8</color>
+    <color name="brand_primary_light">#EFF6FF</color>
+    <color name="brand_secondary">#4F46E5</color>
+
+    <!-- ── Blue ───────────────────────────────── -->
+    <color name="blue_50">#EFF6FF</color>
+    <color name="blue_100">#DBEAFE</color>
+    <color name="blue_200">#BFDBFE</color>
+    <color name="blue_500">#3B82F6</color>
+    <color name="blue_600">#2563EB</color>
+    <color name="blue_700">#1D4ED8</color>
+    <color name="blue_900">#1E3A8A</color>
+
+    <!-- ── Emerald / Green ────────────────────── -->
+    <color name="green_50">#ECFDF5</color>
+    <color name="green_100">#D1FAE5</color>
+    <color name="green_500">#22C55E</color>
+    <color name="green_600">#16A34A</color>
+    <color name="green_700">#15803D</color>
+    <color name="emerald_600">#059669</color>
+
+    <!-- ── Red ────────────────────────────────── -->
+    <color name="red_50">#FEF2F2</color>
+    <color name="red_100">#FEE2E2</color>
+    <color name="red_400">#F87171</color>
+    <color name="red_500">#EF4444</color>
+    <color name="red_600">#DC2626</color>
+
+    <!-- ── Amber / Orange ─────────────────────── -->
+    <color name="amber_50">#FFFBEB</color>
+    <color name="amber_100">#FEF3C7</color>
+    <color name="amber_400">#FBBF24</color>
+    <color name="amber_500">#F59E0B</color>
+    <color name="orange_500">#F97316</color>
+
+    <!-- ── Violet / Purple ────────────────────── -->
+    <color name="violet_50">#F5F3FF</color>
+    <color name="violet_100">#EDE9FE</color>
+    <color name="violet_500">#8B5CF6</color>
+    <color name="violet_600">#7C3AED</color>
+    <color name="violet_700">#6D28D9</color>
+    <color name="purple_700">#7E22CE</color>
+    <color name="purple_800">#6B21A8</color>
+
+    <!-- ── Teal ───────────────────────────────── -->
+    <color name="teal_600">#0D9488</color>
+    <color name="teal_700">#0F766E</color>
+
+    <!-- ── Gray / Slate ───────────────────────── -->
+    <color name="gray_50">#F9FAFB</color>
+    <color name="gray_100">#F3F4F6</color>
+    <color name="gray_200">#E5E7EB</color>
+    <color name="gray_300">#D1D5DB</color>
+    <color name="gray_400">#9CA3AF</color>
+    <color name="gray_500">#6B7280</color>
+    <color name="gray_600">#4B5563</color>
+    <color name="gray_700">#374151</color>
+    <color name="gray_800">#1F2937</color>
+    <color name="gray_900">#111827</color>
+
+    <color name="slate_700">#334155</color>
+    <color name="slate_800">#1E293B</color>
+    <color name="slate_900">#0F172A</color>
+    <color name="slate_950">#020617</color>
+
+    <!-- ── Surface / Background ───────────────── -->
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#F8FAFC</color>
+    <color name="background">#F8FAFC</color>
+    <color name="on_surface">#0F172A</color>
+    <color name="divider">#E2E8F0</color>
+
+    <!-- ── Semantic ───────────────────────────── -->
+    <color name="present_bg">#DCFCE7</color>
+    <color name="present_text">#166534</color>
+    <color name="absent_bg">#FEE2E2</color>
+    <color name="absent_text">#991B1B</color>
+    <color name="pending_bg">#FEF3C7</color>
+    <color name="pending_text">#92400E</color>
+    <color name="late_bg">#FEF9C3</color>
+    <color name="late_text">#713F12</color>
+
+    <!-- ── Role Colors ────────────────────────── -->
+    <color name="role_student_start">#065F46</color>
+    <color name="role_student_end">#0D9488</color>
+    <color name="role_teacher_start">#1E3A8A</color>
+    <color name="role_teacher_end">#2563EB</color>
+    <color name="role_admin_start">#5B21B6</color>
+    <color name="role_admin_end">#7C3AED</color>
+
+    <!-- ── Input ─────────────────────────────── -->
+    <color name="input_background">#F8FAFC</color>
+    <color name="input_border">#CBD5E1</color>
+
+    <!-- ── Extra Green ───────────────────────── -->
+    <color name="green_700_alias">#15803D</color>
+
+    <!-- ── Legacy aliases ─────────────────────── -->
+    <color name="white">#FFFFFF</color>
+    <color name="indigo_600">#4F46E5</color>
+    <color name="amber_500_alias">#F59E0B</color>
+    <color name="amber_800">#92400E</color>
+
+</resources>

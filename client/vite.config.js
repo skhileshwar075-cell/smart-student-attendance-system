@@ -1,0 +1,31 @@
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true
+      }
+    }
+  },
+  optimizeDeps: {
+    exclude: [
+      '@mediapipe/face_detection',
+      '@mediapipe/face_mesh',
+      '@tensorflow/tfjs',
+      '@tensorflow-models/face-detection',
+      '@tensorflow-models/face-landmarks-detection'
+    ]
+  },
+  build: {
+    rollupOptions: {
+      external: []
+    }
+  }
+});

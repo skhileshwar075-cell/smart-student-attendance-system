@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/adminDashboardFragment"
+        android:icon="@android:drawable/ic_menu_today"
+        android:title="Dashboard" />
+
+    <item
+        android:id="@+id/adminStudentsFragment"
+        android:icon="@android:drawable/ic_menu_myplaces"
+        android:title="Students" />
+
+    <item
+        android:id="@+id/adminTeachersFragment"
+        android:icon="@android:drawable/ic_menu_myplaces"
+        android:title="Teachers" />
+
+    <item
+        android:id="@+id/adminClassesFragment"
+        android:icon="@android:drawable/ic_menu_manage"
+        android:title="Classes" />
+
+    <item
+        android:id="@+id/adminSubjectsFragment"
+        android:icon="@android:drawable/ic_menu_agenda"
+        android:title="Subjects" />
+
+    <item
+        android:id="@+id/adminAnalyticsFragment"
+        android:icon="@android:drawable/ic_menu_info_details"
+        android:title="Analytics" />
+
+    <item
+        android:id="@+id/adminAuditLogsFragment"
+        android:icon="@android:drawable/ic_menu_recent_history"
+        android:title="Audit Logs" />
+
+    <item
+        android:id="@+id/adminSessionsFragment"
+        android:icon="@android:drawable/ic_menu_my_calendar"
+        android:title="Sessions" />
+
+    <item
+        android:id="@+id/profileFragment"
+        android:icon="@android:drawable/ic_menu_my_calendar"
+        android:title="Profile" />
+
+</menu>

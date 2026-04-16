@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_student"
+    app:startDestination="@id/studentDashboardFragment">
+
+    <fragment
+        android:id="@+id/studentDashboardFragment"
+        android:name="com.smartattend.ui.student.StudentDashboardFragment"
+        android:label="Dashboard" />
+
+    <fragment
+        android:id="@+id/markAttendanceFragment"
+        android:name="com.smartattend.ui.student.MarkAttendanceFragment"
+        android:label="Mark Attendance" />
+
+    <fragment
+        android:id="@+id/studentHistoryFragment"
+        android:name="com.smartattend.ui.student.StudentHistoryFragment"
+        android:label="History" />
+
+    <fragment
+        android:id="@+id/studentRequestsFragment"
+        android:name="com.smartattend.ui.student.StudentRequestsFragment"
+        android:label="Requests" />
+
+    <fragment
+        android:id="@+id/studentNotificationsFragment"
+        android:name="com.smartattend.ui.student.StudentNotificationsFragment"
+        android:label="Notifications" />
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.smartattend.ui.profile.ProfileFragment"
+        android:label="Profile" />
+
+</navigation>

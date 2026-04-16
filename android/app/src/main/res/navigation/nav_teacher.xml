@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_teacher"
+    app:startDestination="@id/teacherDashboardFragment">
+
+    <fragment
+        android:id="@+id/teacherDashboardFragment"
+        android:name="com.smartattend.ui.teacher.TeacherDashboardFragment"
+        android:label="Dashboard" />
+
+    <fragment
+        android:id="@+id/teacherStudentsFragment"
+        android:name="com.smartattend.ui.teacher.TeacherStudentsFragment"
+        android:label="Students" />
+
+    <fragment
+        android:id="@+id/takeAttendanceFragment"
+        android:name="com.smartattend.ui.teacher.TakeAttendanceFragment"
+        android:label="Take Attendance" />
+
+    <fragment
+        android:id="@+id/activeSessionsFragment"
+        android:name="com.smartattend.ui.teacher.ActiveSessionsFragment"
+        android:label="Active Sessions" />
+
+    <fragment
+        android:id="@+id/teacherReportsFragment"
+        android:name="com.smartattend.ui.teacher.TeacherReportsFragment"
+        android:label="Reports" />
+
+    <fragment
+        android:id="@+id/teacherRequestsFragment"
+        android:name="com.smartattend.ui.teacher.TeacherRequestsFragment"
+        android:label="Requests" />
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.smartattend.ui.profile.ProfileFragment"
+        android:label="Profile" />
+
+</navigation>

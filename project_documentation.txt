@@ -1,0 +1,853 @@
+================================================================
+  SMART SECURE STUDENT ATTENDANCE MANAGEMENT SYSTEM
+  Project Documentation  |  Version 2.3  |  April 2026
+================================================================
+
+----------------------------------------------------------------
+SECTION 1: PROJECT OVERVIEW
+----------------------------------------------------------------
+
+Project Title:
+  Smart Secure Student Attendance Management System (SmartAttend)
+
+Version:    2.3
+Platforms:  Web App (React + Node.js) + Android App (Kotlin)
+Database:   PostgreSQL
+Status:     Active Development
+            - Web platform: Feature-complete
+            - Android platform: Core-complete; sensor integrations pending
+
+Problem Statement:
+  Traditional paper-based and manual attendance systems are
+  time-consuming, error-prone, and susceptible to proxy fraud.
+  Teachers have no real-time visibility, administrators lack
+  consolidated reports, and students cannot track or dispute
+  their own records.
+
+Solution:
+  SmartAttend is a multi-role, multi-platform attendance
+  management system that provides:
+    - Secure session-based attendance (QR code + alphanumeric code)
+    - Browser/camera face verification (TensorFlow.js)
+    - GPS geo-fencing to confirm physical presence on campus
+    - Role-based dashboards for Students, Teachers, and Admins
+    - Real-time notification system (in-app + Firebase FCM)
+    - Correction request workflow with approval / rejection
+    - Full audit trail and advanced analytics with charts
+
+----------------------------------------------------------------
+SECTION 2: TECH STACK
+----------------------------------------------------------------
+
+Layer                   Technology
+──────────────────────────────────────────────────────────────
+Backend                 Node.js 20 + Express 4 (CommonJS)
+Database                PostgreSQL (pg pool, raw SQL, UUID PKs)
+Authentication          JWT (24 h expiry) + bcryptjs
+Frontend                React 18 + Vite 5 + TailwindCSS 3
+Charts                  Recharts 2
+Face Detection          TensorFlow.js + @tensorflow-models/face-detection
+Mobile                  Kotlin (API 26+), MVVM, Hilt DI, Retrofit 2
+Navigation (Android)    Jetpack Navigation Component
+Push Notifications      Firebase Cloud Messaging (FCM)
+Camera (Android)        CameraX
+HTTP Client (Android)   OkHttp 4 + Retrofit 2 + Gson
+Charts (Android)        MPAndroidChart v3.1.0
+Local Storage (Android) DataStore Preferences (Jetpack)
+
+----------------------------------------------------------------
+SECTION 3: FEATURE COMPLETION STATUS
+----------------------------------------------------------------
+
+Legend:  ✅ Complete   ⚠️ In Progress / Partial   ❌ Not Implemented
+
+═══════════════════════════════════════════════════════════════
+WEB APPLICATION
+═══════════════════════════════════════════════════════════════
+
+── Authentication & Accounts ───────────────────────────────
+  ✅ Login (admin / teacher / student roles)
+  ✅ Student self-registration (name, email, password, class)
+  ✅ OTP-based forgot password (6-digit code, 10-min expiry)
+  ✅ Change password (authenticated users)
+  ✅ JWT-based session (24 h token, stored in localStorage)
+  ✅ Profile photo upload (base64, stored in DB)
+  ✅ Profile edit (name, phone)
+
+── Student Module ───────────────────────────────────────────
+  ✅ Dashboard (overall %, subject-wise breakdown, recent records)
+  ✅ Mark Attendance via active session code or session select
+  ✅ Face verification before marking (TensorFlow.js + MediaPipe)
+  ✅ GPS geo-fencing validation at mark time
+  ✅ Attendance history (filterable by subject + date range)
+  ✅ Correction request submission (per subject, per date)
+  ✅ View own requests + status (pending / approved / rejected)
+  ✅ Notification inbox (filter tabs, delete, mark-read, read-all)
+  ✅ Profile page (Info, Stats, Security tabs)
+  ✅ Low-attendance warning banner on dashboard (< 75%)
+
+── Teacher Module ───────────────────────────────────────────
+  ✅ Dashboard (today stats, subject list, pending request count)
+  ✅ Start attendance session (QR / Code / Secure types)
+  ✅ Active session management (stop, countdown timer, auto-poll)
+  ✅ All-day session history with status badges
+  ✅ Manual bulk attendance (mark all students present / absent)
+  ✅ Attendance records (filter by subject, date range, student)
+  ✅ Per-student attendance report with progress bars
+  ✅ Low-attendance shortlist (configurable threshold 1–100%)
+  ✅ Send low-attendance alert notification to individual students
+  ✅ Student Requests: view, approve / reject with review note
+  ✅ Student Management: create, edit, soft-delete own students
+  ✅ CSV attendance report export (client-side)
+  ✅ Profile page (Info, Stats, Security tabs)
+  ✅ Notifications page (full history)
+
+── Admin Module ─────────────────────────────────────────────
+  ✅ System dashboard (counts: students, teachers, classes, subjects)
+  ✅ Today's attendance overview (present / absent totals)
+  ✅ Manage Students (create, edit, deactivate)
+  ✅ Manage Teachers (create, edit, deactivate)
+  ✅ Manage Classes (full CRUD)
+  ✅ Manage Subjects (full CRUD, assign teacher)
+  ✅ Manage Branches (create, list)
+  ✅ Attendance Reports (advanced multi-filter grid)
+  ✅ Analytics dashboard (trend charts, subject stats, low-att list)
+  ✅ Advanced Attendance Analytics (class-wise, subject-wise,
+     individual student analysis, low-attendance shortlist)
+  ✅ Audit Logs viewer (user actions with timestamps)
+  ✅ Anomaly detection endpoint (suspicious attendance patterns)
+  ✅ Notifications page
+
+═══════════════════════════════════════════════════════════════
+ANDROID APPLICATION
+═══════════════════════════════════════════════════════════════
+
+── Launch & Navigation ──────────────────────────────────────
+  ✅ SplashActivity is the LAUNCHER (animated 2s → route by token)
+  ✅ HomeActivity — role-selection screen (Student/Teacher/Admin)
+  ✅ ForgotPasswordActivity navigation from HomeActivity
+  ✅ RegisterActivity navigation from HomeActivity
+  ✅ Logout via overflow menu in MainActivity toolbar
+  ✅ Toolbar displays user's initial after login
+
+── Auth Screens ─────────────────────────────────────────────
+  ✅ Login screen (email/password → JWT stored in DataStore)
+  ✅ Splash screen (auto-login if token present, else HomeActivity)
+  ✅ Register screen (UI + ViewModel complete)
+  ✅ Forgot Password screen (UI + OTP flow complete)
+
+── Student Screens ───────────────────────────────────────────
+  ✅ Dashboard (attendance %, subject cards, recent records)
+  ✅ Attendance History (filterable RecyclerView)
+  ✅ Requests (submit / view correction requests)
+  ✅ Notifications (list, mark-read via API)
+  ✅ Profile (view info, edit name/phone, change password,
+     upload profile photo)
+  ⚠️ Mark Attendance — UI complete, code entry wired;
+     ML Kit face detection NOT integrated;
+     ZXing QR scanner NOT integrated;
+     FusedLocation geo-fence check NOT integrated
+
+── Teacher Screens ───────────────────────────────────────────
+  ✅ Dashboard (today stats, subject cards)
+  ✅ Take Attendance (create QR / Code session, manual bulk mark)
+  ✅ Active Sessions (list + stop session)
+  ✅ Reports (per-student attendance table)
+  ✅ Requests (approve / reject with note)
+  ✅ Profile (view info, edit, change password, photo upload)
+  ✅ Student Management CRUD (create / edit / delete students)
+     — TeacherStudentsFragment + TeacherStudentsViewModel + adapter
+     — Add / Edit dialogs (dialog_student_form.xml)
+     — Search bar with live filtering
+  ⚠️ Low-attendance shortlist (API wired; UI via TeacherReports)
+  ⚠️ Filtered records view (subject filter in TeacherReports)
+
+── Admin Screens ─────────────────────────────────────────────
+  ✅ Dashboard (system stats cards)
+  ✅ Manage Students (list, soft-delete)
+  ✅ Manage Teachers (list, soft-delete)
+  ✅ Manage Classes (list, soft-delete)
+  ✅ Manage Subjects (AdminSubjectsFragment + adapter)
+     — Create / Edit dialogs (dialog_subject_form.xml)
+     — Class + Teacher assignment via spinners
+  ✅ Analytics (charts: attendance trends + subject stats)
+  ✅ Audit Logs viewer (AdminAuditLogsFragment + adapter)
+  ✅ Profile (shared ProfileFragment)
+  ⚠️ Create / Edit dialogs for Students, Teachers (list only)
+  ⚠️ Advanced Attendance Analytics (basic charts available)
+
+═══════════════════════════════════════════════════════════════
+BACKEND / API
+═══════════════════════════════════════════════════════════════
+  ✅ All REST endpoints implemented (see Section 6)
+  ✅ JWT middleware + RBAC (role-based access control)
+  ✅ PostgreSQL schema auto-created on startup
+  ✅ Demo data seeded on every backend restart
+  ✅ Rate limiting (express-rate-limit)
+  ✅ CORS enabled (all origins in dev)
+  ✅ In-app notification service (DB-backed)
+  ✅ Anomaly logging for suspicious attendance events
+  ✅ Audit logging for admin-level actions
+  ⚠️ Firebase FCM push delivery (Admin SDK loaded; real Firebase
+     credentials required for actual push delivery)
+  ⚠️ OTP email delivery (OTP printed to console; real SMTP
+     not configured yet)
+  ❌ WebSocket / SSE (currently uses client polling)
+  ❌ Pagination on notifications + attendance endpoints
+  ❌ Server-side CSV / PDF export endpoint
+
+----------------------------------------------------------------
+SECTION 4: SYSTEM ARCHITECTURE
+----------------------------------------------------------------
+
+                     ┌──────────────────────────┐
+                     │     React Web Client      │
+                     │    (Vite port 5173)       │
+                     │  TailwindCSS + Recharts   │
+                     │  TensorFlow.js (face)     │
+                     │  Geolocation API (GPS)    │
+                     └────────────┬─────────────┘
+                                  │ /api/* (proxied in dev)
+                     ┌────────────▼─────────────┐
+                     │     Express Backend       │
+                     │   Node.js  port 5000      │
+                     │  ┌──────────────────────┐ │
+                     │  │  JWT Auth Middleware  │ │
+                     │  │  RBAC Middleware      │ │
+                     │  └──────────────────────┘ │
+                     │  Routes:                  │
+                     │   /api/auth               │
+                     │   /api/admin              │
+                     │   /api/teacher            │
+                     │   /api/student            │
+                     │   /api/notifications      │
+                     └────────────┬─────────────┘
+                          ┌───────┴───────┐
+              ┌───────────▼───┐       ┌───▼──────────────┐
+              │  PostgreSQL   │       │ Firebase Admin   │
+              │  (DATABASE_URL│       │ SDK (FCM push,   │
+              │   env var)    │       │  optional)       │
+              └───────────────┘       └──────────────────┘
+
+                     ┌──────────────────────────┐
+                     │      Android App          │
+                     │   Kotlin + Hilt MVVM      │
+                     │   Retrofit 2 → REST API   │
+                     │   CameraX (face capture)  │
+                     │   FusedLocation (GPS)     │
+                     │   FCM (push receive)      │
+                     │  BASE_URL debug:           │
+                     │  http://10.0.2.2:5000/api/│
+                     └──────────────────────────┘
+
+Android Launch Flow:
+  SplashActivity (LAUNCHER)
+    ↓ 2s animated entrance
+    ├── token present → MainActivity (role-based nav graph)
+    └── no token     → HomeActivity (Student / Teacher / Admin cards)
+                           ↓ card tap
+                         LoginActivity (pre-fills demo creds in debug)
+
+Data Flow — Marking Attendance (Web):
+  1. Student opens Mark Attendance page
+  2. useFaceDetection hook loads TensorFlow.js model
+  3. useGeolocation hook fetches GPS coordinates
+  4. Student selects active session or enters code
+  5. FaceCapture component verifies a face is detected
+  6. POST /api/student/attendance/mark → backend validates:
+       a. Session exists, is active, not expired
+       b. Student belongs to the session's class
+       c. Not already marked for this session
+       d. GPS within campus geo-fence radius
+  7. Attendance record created; anomaly logged if suspicious
+  8. In-app notification created for student
+
+Data Flow — Teacher Session (Web / Android):
+  1. Teacher selects subject + type, sets duration
+  2. POST /api/teacher/sessions → row created with
+     alphanumeric code, QR data, expires_at computed
+  3. Students poll GET /api/student/sessions/active (~5s)
+  4. Teacher clicks Stop → DELETE /api/teacher/sessions/:id
+  5. is_active set false → students' next poll gets empty list
+
+----------------------------------------------------------------
+SECTION 5: DATABASE SCHEMA
+----------------------------------------------------------------
+
+Table: users
+  id (UUID PK), name, email, password_hash, role
+  (admin|teacher|student), profile_photo (base64 text), phone,
+  fcm_token, is_active, created_at
+
+Table: branches
+  id (UUID PK), name, code, created_at
+
+Table: classes
+  id (UUID PK), name, section, year, branch_id (FK→branches),
+  created_at
+
+Table: teachers
+  id (UUID PK), user_id (FK→users UNIQUE), department,
+  employee_id, created_at
+
+Table: students
+  id (UUID PK), user_id (FK→users UNIQUE), roll_number,
+  class_id (FK→classes), created_by (FK→teachers), created_at
+
+Table: subjects
+  id (UUID PK), name, code, class_id (FK→classes),
+  teacher_id (FK→teachers), created_at
+
+Table: attendance_sessions
+  id (UUID PK), subject_id (FK→subjects), teacher_id,
+  class_id, session_code (unique text), qr_data (text),
+  session_type (QR|Code|Secure), latitude, longitude,
+  radius_meters, is_active (bool), created_at, expires_at
+
+Table: attendance
+  id (UUID PK), student_id (FK→students), subject_id,
+  session_id (FK→attendance_sessions), status
+  (present|absent|late|manual), marked_at, latitude, longitude,
+  face_verified (bool), is_manual (bool), marked_by (FK→users),
+  created_at
+
+Table: attendance_requests
+  id (UUID PK), student_id, subject_id, request_date, reason,
+  status (pending|approved|rejected), reviewed_by (FK→users),
+  review_note, created_at, updated_at
+
+Table: notifications
+  id (UUID PK), user_id (FK→users), title, message, type,
+  is_read (bool), created_at
+
+Table: anomaly_logs
+  id (UUID PK), student_id, subject_id, session_id,
+  anomaly_type, description, created_at
+
+Table: audit_logs
+  id (UUID PK), user_id (FK→users), action, entity_type,
+  entity_id, details (JSONB), ip_address, created_at
+
+Table: password_reset_otps
+  id (UUID PK), user_id (FK→users), otp_code, expires_at,
+  is_used (bool), created_at
+
+----------------------------------------------------------------
+SECTION 6: COMPLETE API REFERENCE
+----------------------------------------------------------------
+
+BASE URL (web dev):       http://localhost:5000/api
+BASE URL (Android debug): http://10.0.2.2:5000/api
+BASE URL (production):    https://<your-domain>/api
+
+Protected routes require header:
+  Authorization: Bearer <jwt_token>
+
+── AUTH  (/api/auth) ────────────────────────────────────────
+POST   /login               Login (all roles) → { token, user }
+POST   /register            Student self-registration
+POST   /forgot-password     Send OTP to email
+POST   /verify-otp          Verify OTP code → { reset_token }
+POST   /reset-password      Reset password using verified token
+GET    /me                  Get current authenticated user
+PUT    /profile             Update name / phone
+PUT    /change-password     Change password (must know current)
+PUT    /profile-photo       Upload profile photo (base64 body)
+PUT    /fcm-token           Store device FCM token
+
+── ADMIN  (/api/admin)  [role: admin] ───────────────────────
+GET    /stats                   System counts
+GET    /students                List all students
+POST   /students                Create student
+PUT    /students/:id            Edit student
+DELETE /students/:id            Deactivate student
+GET    /teachers                List all teachers
+POST   /teachers                Create teacher
+PUT    /teachers/:id            Edit teacher
+DELETE /teachers/:id            Deactivate teacher
+GET    /classes                 List classes
+POST   /classes                 Create class
+PUT    /classes/:id             Edit class
+DELETE /classes/:id             Delete class
+GET    /branches                List branches
+POST   /branches                Create branch
+GET    /subjects                List subjects
+POST   /subjects                Create subject
+PUT    /subjects/:id            Edit subject
+DELETE /subjects/:id            Delete subject
+GET    /reports                 Attendance report (multi-filter)
+GET    /analytics               Analytics summary + chart data
+GET    /audit-logs              Audit log entries
+GET    /anomalies               Anomaly log entries
+GET    /attendance/analytics    Advanced class / subject analytics
+GET    /attendance/student/:id  Individual student full report
+GET    /attendance/low-shortlist  Low-attendance student list
+GET    /sessions                All sessions (with filters)
+DELETE /sessions/:id            Force-stop a session
+
+── TEACHER  (/api/teacher)  [role: teacher | admin] ─────────
+GET    /dashboard               Today's stats + subjects
+GET    /subjects                Subjects taught by this teacher
+GET    /students                Students in teacher's classes
+POST   /students                Create student under teacher
+PUT    /students/:id            Edit student
+DELETE /students/:id            Soft-delete student
+GET    /sessions/active         Currently active sessions
+GET    /sessions                All sessions (date filter)
+POST   /sessions                Start new session
+DELETE /sessions/:id            Stop session
+POST   /attendance/manual       Bulk-mark manual attendance
+GET    /attendance              Attendance records (filtered)
+GET    /attendance/report       Per-student report with %
+GET    /attendance/low-shortlist  Low-attendance shortlist
+POST   /alerts                  Send alert notification to student
+GET    /requests                Correction requests list
+PUT    /requests/:id            Approve / reject a request
+
+── STUDENT  (/api/student)  [role: student | admin] ─────────
+GET    /dashboard               Stats + subject breakdown
+GET    /attendance              Own attendance history
+GET    /subjects                Enrolled subjects
+GET    /sessions/active         Active sessions for student's class
+POST   /attendance/mark         Mark attendance for a session
+GET    /requests                Own correction requests
+POST   /requests                Submit correction request
+GET    /notifications           All notifications
+PUT    /notifications/:id/read  Mark one notification read
+PUT    /notifications/read-all  Mark all notifications read
+
+── NOTIFICATIONS  (/api/notifications)  [all roles] ─────────
+GET    /                        All notifications for user
+GET    /unread-count            Unread notification count
+POST   /                        Create notification (internal)
+PUT    /read-all                Mark all read
+PUT    /:id/read                Mark one read
+DELETE /:id                     Delete notification
+
+----------------------------------------------------------------
+SECTION 7: PROJECT FILE STRUCTURE
+----------------------------------------------------------------
+
+/                              ← Monorepo root
+├── server/                    ← Node.js backend
+│   ├── index.js               ← Entry: rate limiting, CORS, route mount
+│   ├── routes/
+│   │   ├── auth.js            ← Login, register, OTP, profile, photo, FCM
+│   │   ├── admin.js           ← Admin CRUD, analytics, audit, sessions
+│   │   ├── teacher.js         ← Teacher ops, sessions, manual att., requests
+│   │   ├── student.js         ← Student ops, mark attendance, requests
+│   │   └── notifications.js   ← Generic notification CRUD (all roles)
+│   ├── middleware/
+│   │   └── auth.js            ← authenticateToken, requireRole
+│   ├── db/
+│   │   ├── database.js        ← pg pool + initDB (schema auto-create)
+│   │   ├── seed.js            ← Demo data seeder
+│   │   ├── init.js            ← Schema-only init helper
+│   │   └── firebase.js        ← Firebase Admin SDK init (optional)
+│   └── services/
+│       ├── attendanceService.js   ← Low-attendance query helper
+│       └── notificationService.js ← Notification creation helper
+│
+├── client/                    ← React + Vite frontend
+│   ├── index.html
+│   ├── vite.config.js         ← Proxy /api → localhost:5000
+│   ├── tailwind.config.js
+│   ├── postcss.config.js
+│   ├── package.json
+│   └── src/
+│       ├── App.jsx            ← BrowserRouter, all routes, ProtectedRoute
+│       ├── main.jsx
+│       ├── index.css          ← Global styles + Tailwind directives
+│       ├── context/
+│       │   └── AuthContext.jsx  ← JWT auth state, axios headers, refreshUser
+│       ├── components/
+│       │   ├── Layout.jsx       ← Sidebar nav (role-aware), header, shell
+│       │   ├── FormFields.jsx   ← Shared icon-input + password-toggle helpers
+│       │   ├── FaceCapture.jsx  ← TF.js face capture UI component
+│       │   └── NotificationBell.jsx ← Header bell with unread badge
+│       ├── hooks/
+│       │   ├── useFaceDetection.js  ← TF.js model load + detection loop
+│       │   └── useGeolocation.js    ← Browser Geolocation API wrapper
+│       └── pages/
+│           ├── Login.jsx
+│           ├── ForgotPassword.jsx
+│           ├── HomePage.jsx
+│           ├── admin/
+│           │   ├── Dashboard.jsx
+│           │   ├── ManageStudents.jsx
+│           │   ├── ManageTeachers.jsx
+│           │   ├── ManageClasses.jsx
+│           │   ├── ManageSubjects.jsx
+│           │   ├── Reports.jsx
+│           │   ├── Analytics.jsx
+│           │   ├── AttendanceAnalytics.jsx
+│           │   ├── AuditLogs.jsx
+│           │   └── Profile.jsx
+│           ├── teacher/
+│           │   ├── Dashboard.jsx
+│           │   ├── TakeAttendance.jsx
+│           │   ├── ActiveSessions.jsx
+│           │   ├── Students.jsx
+│           │   ├── Records.jsx
+│           │   ├── Reports.jsx
+│           │   ├── Requests.jsx
+│           │   └── Profile.jsx
+│           └── student/
+│               ├── Dashboard.jsx
+│               ├── Attendance.jsx
+│               ├── MarkAttendance.jsx
+│               ├── Requests.jsx
+│               ├── Notifications.jsx
+│               └── Profile.jsx
+│
+├── android/                   ← Kotlin Android app
+│   ├── app/build.gradle       ← compileSdk 34, minSdk 26, Hilt, CameraX
+│   ├── settings.gradle        ← Module + dependency resolution config
+│   ├── ANDROID_GUIDE.md       ← Android developer reference
+│   └── app/src/main/
+│       ├── AndroidManifest.xml  ← SplashActivity as LAUNCHER; all activities
+│       ├── java/com/smartattend/
+│       │   ├── SmartAttendApp.kt        ← Hilt application class
+│       │   ├── ui/
+│       │   │   ├── SplashActivity.kt    ← LAUNCHER; animated; routes by token
+│       │   │   ├── HomeActivity.kt      ← Role selection (Student/Teacher/Admin)
+│       │   │   ├── MainActivity.kt      ← NavController host + bottom nav +
+│       │   │   │                          user initial + logout overflow menu
+│       │   │   ├── MainViewModel.kt     ← isLoggedIn, getUserRole,
+│       │   │   │                          getUserName, logout
+│       │   │   ├── auth/
+│       │   │   │   ├── LoginActivity.kt + LoginViewModel.kt
+│       │   │   │   ├── RegisterActivity.kt + RegisterViewModel.kt
+│       │   │   │   └── ForgotPasswordActivity.kt + ForgotPasswordViewModel.kt
+│       │   │   ├── student/
+│       │   │   │   ├── StudentDashboardFragment + ViewModel
+│       │   │   │   ├── StudentHistoryFragment + ViewModel
+│       │   │   │   ├── MarkAttendanceFragment + ViewModel
+│       │   │   │   ├── StudentRequestsFragment + Adapter + ViewModel
+│       │   │   │   └── StudentNotificationsFragment + Adapter + ViewModel
+│       │   │   ├── teacher/
+│       │   │   │   ├── TeacherDashboardFragment + ViewModel
+│       │   │   │   ├── TakeAttendanceFragment + ViewModel
+│       │   │   │   ├── ActiveSessionsFragment + Adapter + ViewModel
+│       │   │   │   ├── TeacherStudentsFragment + Adapter + ViewModel
+│       │   │   │   ├── TeacherReportsFragment + Adapter + ViewModel
+│       │   │   │   └── TeacherRequestsFragment + Adapter + ViewModel
+│       │   │   ├── admin/
+│       │   │   │   ├── AdminDashboardFragment + ViewModel
+│       │   │   │   ├── AdminStudentsFragment + Adapter + ViewModel
+│       │   │   │   ├── AdminTeachersFragment + Adapter + ViewModel
+│       │   │   │   ├── AdminClassesFragment + Adapter + ViewModel
+│       │   │   │   ├── AdminSubjectsFragment + Adapter + ViewModel
+│       │   │   │   ├── AdminAnalyticsFragment + ViewModel
+│       │   │   │   └── AdminAuditLogsFragment + Adapter + ViewModel
+│       │   │   └── profile/
+│       │   │       ├── ProfileFragment + ViewModel (shared, all roles)
+│       │   │       ├── EditProfileActivity.kt
+│       │   │       └── ChangePasswordActivity.kt
+│       │   ├── data/
+│       │   │   ├── api/
+│       │   │   │   ├── ApiService.kt         ← All Retrofit endpoints
+│       │   │   │   └── AuthInterceptor.kt    ← Injects Bearer token header
+│       │   │   ├── local/
+│       │   │   │   └── PreferenceManager.kt  ← DataStore Preferences wrapper
+│       │   │   └── repository/
+│       │   │       ├── AuthRepository.kt
+│       │   │       ├── StudentRepository.kt
+│       │   │       ├── TeacherRepository.kt
+│       │   │       └── AdminRepository.kt
+│       │   ├── domain/model/
+│       │   │   ├── Models.kt          ← All request/response data classes
+│       │   │   └── ProfileModels.kt   ← Profile-specific models
+│       │   ├── di/
+│       │   │   └── AppModule.kt       ← Hilt module (Retrofit, OkHttp, ApiService)
+│       │   ├── service/
+│       │   │   └── SmartAttendFCMService.kt  ← FCM push receiver + channels
+│       │   └── util/
+│       │       ├── Resource.kt        ← Loading/Success/Error sealed class
+│       │       └── TokenManager.kt    ← Sync token read (used by SplashActivity)
+│       └── res/
+│           ├── drawable/              ← Vector icons (ic_graduation_cap,
+│           │                           ic_student, ic_teacher, ic_shield,
+│           │                           ic_arrow_right, ic_mail, ic_lock,
+│           │                           ic_location, ic_face_detection,
+│           │                           ic_notification, shape drawables)
+│           ├── color/
+│           │   └── bottom_nav_color.xml  ← Color state list for nav items
+│           ├── layout/               ← Activity, fragment, item, dialog layouts
+│           ├── menu/
+│           │   ├── menu_student.xml
+│           │   ├── menu_teacher.xml
+│           │   ├── menu_admin.xml
+│           │   └── menu_main_overflow.xml  ← Toolbar overflow: Logout
+│           ├── navigation/
+│           │   ├── nav_student.xml
+│           │   ├── nav_teacher.xml
+│           │   └── nav_admin.xml
+│           └── values/
+│               ├── colors.xml
+│               ├── themes.xml
+│               └── strings.xml
+│
+├── package.json               ← Root: backend dependencies + scripts
+├── project_documentation.txt  ← This file
+├── project_setup.txt          ← Step-by-step setup guide
+└── replit.md                  ← Developer quick-reference
+
+----------------------------------------------------------------
+SECTION 8: ROLE & ACCESS MATRIX
+----------------------------------------------------------------
+
+Feature                          Student  Teacher  Admin
+────────────────────────────────────────────────────────
+Login / Profile / Password          ✅       ✅       ✅
+Mark Attendance                     ✅       —        —
+View Own Attendance                 ✅       —        —
+Submit Correction Request           ✅       —        —
+View Own Notifications              ✅       ✅       ✅
+Start / Stop Session                —        ✅       ✅
+Manual Bulk Attendance              —        ✅       ✅
+Manage Own Students                 —        ✅       —
+Approve / Reject Requests           —        ✅       —
+Send Low-Att. Alerts                —        ✅       —
+Manage All Students                 —        —        ✅
+Manage All Teachers                 —        —        ✅
+Manage Classes / Subjects           —        —        ✅
+System Analytics                    —        —        ✅
+Audit Logs                          —        —        ✅
+Force-Stop Any Session              —        —        ✅
+
+----------------------------------------------------------------
+SECTION 9: DEMO CREDENTIALS
+----------------------------------------------------------------
+
+Seeded automatically on every backend restart.
+
+Role      Email                         Password
+────────────────────────────────────────────────────────
+Admin     admin@smartattend.edu         Admin@123
+Teacher   priya@smartattend.edu         Teacher@123
+Teacher   rajan@smartattend.edu         Teacher@123
+Student   aarav@smartattend.edu         Student@123
+Student   priya.s@smartattend.edu       Student@123
+Student   rahul@smartattend.edu         Student@123
+Student   ananya@smartattend.edu        Student@123
+Student   karan@smartattend.edu         Student@123
+Student   sneha@smartattend.edu         Student@123
+
+IMPORTANT: The schema uses DROP TABLE on every backend restart
+in development. All data is reset each time. Remove the DROP
+TABLE statements from server/db/database.js before production.
+
+----------------------------------------------------------------
+SECTION 10: ANDROID — DETAILED STATUS & ARCHITECTURE
+----------------------------------------------------------------
+
+Architecture Pattern: MVVM + Hilt Dependency Injection
+
+App Entry Flow:
+  SplashActivity is the declared LAUNCHER activity.
+  On launch it shows a 2-second animated splash, then:
+    - Token found in DataStore → navigates to MainActivity
+    - No token              → navigates to HomeActivity
+
+  HomeActivity presents role-selection cards (Student / Teacher /
+  Admin). Tapping a card opens LoginActivity with the selected
+  role pre-populated (debug builds also pre-fill demo credentials).
+
+  MainActivity is the NavController host. After verifying the
+  session it loads the role-appropriate navigation graph and
+  bottom navigation menu. An overflow menu in the toolbar
+  provides a Logout option that clears the DataStore session
+  and returns to HomeActivity.
+
+Navigation Graphs:
+  nav_student.xml → Bottom nav: Dashboard, Mark Attendance,
+    History, Requests, Notifications, Profile
+  nav_teacher.xml → Bottom nav: Dashboard, Students,
+    Attendance, Sessions, Reports, Requests, Profile
+  nav_admin.xml   → Bottom nav: Dashboard, Students,
+    Teachers, Classes, Subjects, Analytics, Audit Logs, Profile
+
+Local Storage (DataStore):
+  PreferenceManager.kt defines `Context.dataStore` (name:
+  "smartattend_prefs"). Stored keys: auth_token, user_id,
+  user_name, user_email, user_role, profile_id, class_id.
+  TokenManager.kt reads the token synchronously (runBlocking)
+  for use in SplashActivity before the coroutine scope is ready.
+
+Dependency Injection (Hilt — AppModule.kt):
+  - Provides: OkHttpClient (with AuthInterceptor + logging),
+    Retrofit instance (BASE_URL from BuildConfig), ApiService
+  - AuthInterceptor injects "Authorization: Bearer <token>"
+    from PreferenceManager on every outgoing request
+
+Data Repositories:
+  - AuthRepository:    login, register, forgotPassword, verifyOTP,
+    resetPassword, getProfile, updateProfile, changePassword,
+    uploadProfilePhoto, updateFcmToken, getUserName
+  - StudentRepository: dashboard, attendance history, subjects,
+    activeSessions, markAttendance, requests, notifications
+  - TeacherRepository: dashboard, subjects, students (CRUD),
+    sessions (create/stop), manualAttendance, reports, requests,
+    low-attendance alerts
+  - AdminRepository:   system stats, students, teachers, classes,
+    subjects (CRUD), analytics, audit logs
+
+Android BASE_URL Configuration (app/build.gradle):
+  Debug (emulator):   http://10.0.2.2:5000/api/
+  Release:            https://<your-replit-domain>/api/
+
+Remaining Android Integrations:
+  - ML Kit Face Detection in MarkAttendanceFragment
+  - ZXing QR scanner in MarkAttendanceFragment
+  - FusedLocationProviderClient in MarkAttendanceFragment
+  - Admin: Create / Edit dialogs for Students and Teachers
+  - Admin: Advanced Attendance Analytics deep-dive screen
+
+----------------------------------------------------------------
+SECTION 11: PLATFORM SYNCHRONISATION
+----------------------------------------------------------------
+
+Session Lifecycle:
+  Teacher starts session (web or Android):
+    → POST /api/teacher/sessions creates is_active=true row
+    → Students poll GET /api/student/sessions/active (~5 s)
+    → Session card appears on student screen
+  Teacher stops session:
+    → DELETE /api/teacher/sessions/:id sets is_active=false
+    → Students' next poll returns empty list → card removed
+
+Server-Authoritative Validation:
+  - Expired sessions (expires_at < NOW()) cannot be marked
+  - Client countdown timers are cosmetic only
+  - All constraints (geo-fence, face, class membership) enforced
+    server-side on POST /api/student/attendance/mark
+
+Notification Flow:
+  - Any action (request approve, alert, session start, etc.)
+    calls notificationService.js to create a DB notification row
+  - Web: NotificationBell polls /api/notifications/unread-count
+  - Android: FCMService.kt receives push if credentials are set
+  - Fallback: In-app notification list always reflects DB state
+
+----------------------------------------------------------------
+SECTION 12: KNOWN LIMITATIONS (DEVELOPMENT MODE)
+----------------------------------------------------------------
+
+1. DROP TABLE on restart — server/db/database.js recreates all
+   tables on every start. All data is wiped. Remove before prod.
+
+2. OTP delivery — OTP is printed to stdout (server console).
+   Configure nodemailer with real SMTP for email delivery.
+
+3. Firebase FCM — Admin SDK is initialised but requires real
+   FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and
+   FIREBASE_PRIVATE_KEY env vars for actual push delivery.
+   In-app notifications work without Firebase credentials.
+
+4. CORS — Currently allows all origins. Restrict to your
+   production domain before deployment.
+
+5. JWT_SECRET — Falls back to a hardcoded dev string.
+   Always set a strong random secret in production.
+
+6. Profile photos in DB — Stored as base64 TEXT. Fine for demo;
+   migrate to object storage (S3 / Cloudflare R2) for production.
+
+7. No pagination — Notification and attendance endpoints return
+   all records. Add LIMIT / OFFSET for large datasets.
+
+8. Android sensor integrations — ML Kit face detection, ZXing
+   QR scanner, and FusedLocation are declared in build.gradle
+   but not yet wired into MarkAttendanceFragment logic.
+
+----------------------------------------------------------------
+SECTION 13: NEXT DEVELOPMENT PHASE (ROADMAP)
+----------------------------------------------------------------
+
+Priority 1 — Android Sensor Integrations
+  - ML Kit Face Detection in MarkAttendanceFragment
+  - ZXing QR scanner in MarkAttendanceFragment
+  - FusedLocation geo-fence check in MarkAttendanceFragment
+  - Admin: Create / Edit dialogs for Students, Teachers
+  - Admin: Advanced Attendance Analytics deep-dive screen
+  - Teacher: Low-attendance shortlist dedicated screen
+
+Priority 2 — Backend Enhancements
+  - Real SMTP email for OTP delivery (nodemailer / SendGrid)
+  - Supply real Firebase credentials for FCM push
+  - Pagination on notifications + attendance endpoints
+  - WebSocket / SSE for real-time session updates
+  - Server-side CSV / PDF export endpoint
+
+Priority 3 — Web UI/UX Improvements
+  - Dark mode support
+  - PWA manifest + service worker for offline capability
+  - QR code scanner in browser (html5-qrcode)
+  - Improved mobile-responsive layout for admin analytics
+  - Teacher: drag-and-drop class roster management
+
+Priority 4 — Production Readiness
+  - Remove DROP TABLE from server/db/database.js
+  - Database migrations system (db-migrate / Flyway)
+  - Strong JWT_SECRET, DATABASE_URL via environment variables
+  - Restrict CORS to production domain
+  - HTTPS enforcement + security headers (helmet.js)
+  - Process manager: PM2 with restart-on-crash
+  - Structured logging (winston / pino)
+  - Health check endpoint + uptime monitoring
+
+Priority 5 — Performance & Scalability
+  - Tune pg connection pool size
+  - DB indexes: attendance.date, attendance.student_id,
+    notifications.user_id, attendance_sessions.is_active
+  - Frontend route-level code-splitting
+  - Move profile photos from DB base64 to S3 / Cloudflare R2
+
+----------------------------------------------------------------
+SECTION 14: CHANGELOG
+----------------------------------------------------------------
+
+Version 2.3 (April 2026) — Android Crash Fixes & UX
+  ✅ Fixed LAUNCHER activity: SplashActivity is now the entry
+     point (was incorrectly set to MainActivity)
+  ✅ Fixed SplashActivity exported="true" and correct theme
+  ✅ Added 10 missing vector drawables that caused crashes:
+     ic_graduation_cap, ic_student, ic_teacher, ic_shield,
+     ic_arrow_right, ic_mail, ic_lock, ic_location,
+     ic_face_detection, circle_blue_solid
+  ✅ Added logout: overflow menu in MainActivity toolbar
+     (clears DataStore session → HomeActivity)
+  ✅ MainActivity now sets tvUserInitial from stored user name
+  ✅ MainActivity redirects non-logged users to HomeActivity
+     (was incorrectly going to LoginActivity directly)
+  ✅ Added getUserName() to AuthRepository + MainViewModel
+  ✅ Added AppBarConfiguration in MainActivity for correct
+     toolbar back-button behaviour
+  ✅ Created menu_main_overflow.xml (Logout item)
+
+Version 2.2 (April 2026) — Android Feature Parity
+  ✅ Teacher: Student Management CRUD (TeacherStudentsFragment)
+  ✅ Admin: Manage Subjects screen (AdminSubjectsFragment)
+  ✅ Admin: Audit Logs viewer (AdminAuditLogsFragment)
+  ✅ Navigation graphs updated (nav_teacher.xml, nav_admin.xml)
+  ✅ Bottom nav menus updated (menu_teacher, menu_admin)
+  ✅ New layout files: fragment_teacher_students.xml,
+     dialog_student_form.xml, item_teacher_student.xml,
+     fragment_admin_subjects.xml, dialog_subject_form.xml,
+     item_admin_subject.xml, fragment_admin_audit_logs.xml,
+     item_audit_log.xml
+
+Version 2.1 (April 2026) — Web Platform Complete
+  ✅ All web pages implemented (Admin, Teacher, Student)
+  ✅ Fixed FormFields.jsx CSS specificity (icon + toggle overlap)
+  ✅ Fixed index.css input height + vertical text centering
+  ✅ Active session management with real-time countdown
+  ✅ Low-attendance alert notifications
+  ✅ CSV export in Teacher Reports
+
+================================================================
+  Last Updated:  April 2026  |  Version 2.3
+  Web:     React 18 + Vite 5 + Node.js 20 + PostgreSQL
+  Mobile:  Kotlin (API 26+) + MVVM + Hilt + Retrofit 2
+================================================================

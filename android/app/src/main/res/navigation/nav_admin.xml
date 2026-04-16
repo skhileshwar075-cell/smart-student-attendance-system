@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_admin"
+    app:startDestination="@id/adminDashboardFragment">
+
+    <fragment
+        android:id="@+id/adminDashboardFragment"
+        android:name="com.smartattend.ui.admin.AdminDashboardFragment"
+        android:label="Dashboard" />
+
+    <fragment
+        android:id="@+id/adminStudentsFragment"
+        android:name="com.smartattend.ui.admin.AdminStudentsFragment"
+        android:label="Students" />
+
+    <fragment
+        android:id="@+id/adminTeachersFragment"
+        android:name="com.smartattend.ui.admin.AdminTeachersFragment"
+        android:label="Teachers" />
+
+    <fragment
+        android:id="@+id/adminClassesFragment"
+        android:name="com.smartattend.ui.admin.AdminClassesFragment"
+        android:label="Classes" />
+
+    <fragment
+        android:id="@+id/adminSubjectsFragment"
+        android:name="com.smartattend.ui.admin.AdminSubjectsFragment"
+        android:label="Subjects" />
+
+    <fragment
+        android:id="@+id/adminAnalyticsFragment"
+        android:name="com.smartattend.ui.admin.AdminAnalyticsFragment"
+        android:label="Analytics" />
+
+    <fragment
+        android:id="@+id/adminAuditLogsFragment"
+        android:name="com.smartattend.ui.admin.AdminAuditLogsFragment"
+        android:label="Audit Logs" />
+
+    <fragment
+        android:id="@+id/adminSessionsFragment"
+        android:name="com.smartattend.ui.admin.AdminSessionsFragment"
+        android:label="Academic Sessions" />
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.smartattend.ui.profile.ProfileFragment"
+        android:label="Profile" />
+
+</navigation>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SmartAttend</string>
+    <string name="login_title">Welcome to SmartAttend</string>
+    <string name="login_subtitle">Sign in to continue</string>
+    <string name="email_hint">Email address</string>
+    <string name="password_hint">Password</string>
+    <string name="btn_login">Sign In</string>
+    <string name="mark_attendance">Mark Attendance</string>
+    <string name="face_verification">Face Verification</string>
+    <string name="geo_location">Location</string>
+    <string name="active_sessions">Active Sessions</string>
+    <string name="enter_code">Enter Attendance Code</string>
+    <string name="scan_qr">Scan QR Code</string>
+    <string name="take_attendance">Take Attendance</string>
+    <string name="attendance_records">Records</string>
+    <string name="reports">Reports</string>
+    <string name="students">Students</string>
+    <string name="notifications">Notifications</string>
+    <string name="dashboard">Dashboard</string>
+    <string name="profile">Profile</string>
+    <string name="no_sessions_message">No active sessions right now.\nAsk your teacher to start a session.</string>
+    <string name="demo_hint">Tap for demo credentials</string>
+</resources>

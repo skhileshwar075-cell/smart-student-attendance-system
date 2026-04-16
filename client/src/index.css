@@ -1,0 +1,442 @@
+@import "tailwindcss";
+
+/* ── Design Tokens ────────────────────────────────────────────── */
+:root {
+  --primary: #2563EB;
+  --primary-dark: #1D4ED8;
+  --primary-light: #EFF6FF;
+  --success: #16A34A;
+  --danger: #DC2626;
+  --warning: #D97706;
+  --surface: #FFFFFF;
+  --bg: #F8FAFC;
+  --border: #E2E8F0;
+  --text: #0F172A;
+  --text-muted: #64748B;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06);
+}
+
+/* ── Base ─────────────────────────────────────────────────────── */
+@layer base {
+  body {
+    @apply text-gray-900 font-sans antialiased;
+    background-color: var(--bg);
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+  }
+  html, body, #root {
+    width: 100%;
+    min-height: 100%;
+  }
+  * { box-sizing: border-box; }
+  input, select, textarea {
+    @apply text-gray-900 min-w-0;
+  }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-gray-200 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-gray-300; }
+}
+
+/* ── Custom Utilities (Tailwind v4) ───────────────────────────── */
+@utility safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+@utility card {
+  @apply bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 w-full min-w-0;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+}
+
+@utility card-flat {
+  @apply bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 w-full min-w-0;
+}
+
+@utility card-ghost {
+  @apply bg-gray-50 rounded-2xl border border-gray-100 p-4 sm:p-5 w-full min-w-0;
+}
+
+@utility card-glass {
+  @apply rounded-2xl border border-white/20 p-4 sm:p-5 w-full min-w-0;
+  backdrop-filter: blur(12px);
+  background: rgba(255,255,255,0.7);
+}
+
+@utility attendance-card {
+  @apply bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 w-full min-w-0;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 font-semibold text-sm
+         rounded-xl px-4 py-2.5 transition-all duration-200
+         disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none;
+  min-width: 0;
+}
+
+@utility btn-primary {
+  @apply inline-flex items-center justify-center gap-2 font-semibold text-sm
+         rounded-xl px-4 py-2.5 transition-all duration-200
+         disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none
+         bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800;
+  min-width: 0;
+  box-shadow: 0 1px 3px rgba(37,99,235,0.4);
+}
+
+@utility btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 font-semibold text-sm
+         rounded-xl px-4 py-2.5 transition-all duration-200
+         disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none
+         bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 active:bg-gray-100;
+  min-width: 0;
+}
+
+@utility btn-danger {
+  @apply inline-flex items-center justify-center gap-2 font-semibold text-sm
+         rounded-xl px-4 py-2.5 transition-all duration-200
+         disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none
+         bg-red-600 text-white hover:bg-red-700 active:bg-red-800;
+  min-width: 0;
+}
+
+@utility btn-success {
+  @apply inline-flex items-center justify-center gap-2 font-semibold text-sm
+         rounded-xl px-4 py-2.5 transition-all duration-200
+         disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none
+         bg-emerald-600 text-white hover:bg-emerald-700;
+  min-width: 0;
+}
+
+@utility btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 font-semibold text-sm
+         rounded-xl px-4 py-2.5 transition-all duration-200
+         disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none
+         bg-transparent text-gray-600 hover:bg-gray-100;
+  min-width: 0;
+}
+
+@utility btn-sm {
+  @apply py-1.5 px-3 text-xs rounded-lg;
+}
+
+@utility btn-lg {
+  @apply py-3 px-6 text-base;
+}
+
+@utility btn-icon {
+  @apply w-9 h-9 p-0 rounded-xl;
+}
+
+@utility input-field {
+  @apply w-full min-w-0 h-11 border border-gray-200 rounded-xl px-3 py-0 text-sm
+         placeholder:text-gray-400 text-gray-900
+         focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400
+         bg-white transition-colors disabled:bg-gray-50 disabled:text-gray-500;
+  line-height: 2.75rem;
+}
+
+@utility label {
+  @apply block text-xs font-semibold text-gray-600 mb-1.5 tracking-wide uppercase;
+}
+
+@utility label-normal {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+@utility form-group {
+  @apply space-y-1.5;
+}
+
+@utility badge {
+  @apply inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full;
+}
+
+@utility badge-present {
+  @apply inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700;
+}
+
+@utility badge-absent {
+  @apply inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-red-100 text-red-700;
+}
+
+@utility badge-pending {
+  @apply inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700;
+}
+
+@utility badge-approved {
+  @apply inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700;
+}
+
+@utility badge-rejected {
+  @apply inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-red-100 text-red-700;
+}
+
+@utility badge-blue {
+  @apply inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-100 text-blue-700;
+}
+
+@utility badge-purple {
+  @apply inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-violet-100 text-violet-700;
+}
+
+@utility badge-gray {
+  @apply inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600;
+}
+
+@utility dot-active {
+  @apply w-2 h-2 rounded-full bg-emerald-500 animate-pulse;
+}
+
+@utility dot-idle {
+  @apply w-2 h-2 rounded-full bg-gray-300;
+}
+
+@utility dot-warning {
+  @apply w-2 h-2 rounded-full bg-amber-400 animate-pulse;
+}
+
+@utility dot-error {
+  @apply w-2 h-2 rounded-full bg-red-500 animate-pulse;
+}
+
+@utility stat-card {
+  @apply bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 w-full min-w-0 flex flex-col gap-1 cursor-default;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+}
+
+@utility data-table {
+  @apply w-full text-sm;
+  min-width: 640px;
+}
+
+@utility progress-bar {
+  @apply h-2 rounded-full overflow-hidden bg-gray-100;
+}
+
+@utility progress-fill {
+  @apply h-full rounded-full transition-all duration-700;
+}
+
+@utility progress-green {
+  @apply bg-emerald-500;
+}
+
+@utility progress-yellow {
+  @apply bg-amber-400;
+}
+
+@utility progress-red {
+  @apply bg-red-500;
+}
+
+@utility alert {
+  @apply flex items-start gap-3 rounded-2xl p-4 text-sm font-medium border;
+}
+
+@utility alert-success {
+  @apply flex items-start gap-3 rounded-2xl p-4 text-sm font-medium border bg-emerald-50 text-emerald-800 border-emerald-200;
+}
+
+@utility alert-error {
+  @apply flex items-start gap-3 rounded-2xl p-4 text-sm font-medium border bg-red-50 text-red-800 border-red-200;
+}
+
+@utility alert-warning {
+  @apply flex items-start gap-3 rounded-2xl p-4 text-sm font-medium border bg-amber-50 text-amber-800 border-amber-200;
+}
+
+@utility alert-info {
+  @apply flex items-start gap-3 rounded-2xl p-4 text-sm font-medium border bg-blue-50 text-blue-800 border-blue-200;
+}
+
+@utility skeleton {
+  @apply bg-gray-200 rounded-xl animate-pulse;
+}
+
+@utility modal-backdrop {
+  @apply fixed inset-0 bg-black/40 backdrop-blur-sm z-40 flex items-end sm:items-center justify-center p-3 sm:p-4;
+}
+
+@utility modal-content {
+  @apply bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto;
+  max-width: min(28rem, calc(100vw - 1.5rem));
+}
+
+@utility divider {
+  @apply flex items-center gap-3 text-xs text-gray-400 font-medium;
+}
+
+@utility page-header {
+  @apply mb-5;
+}
+
+@utility page-title {
+  @apply text-lg sm:text-xl font-bold text-gray-900;
+}
+
+@utility page-subtitle {
+  @apply text-sm text-gray-500 mt-0.5;
+}
+
+@utility section-header {
+  @apply flex flex-wrap items-center justify-between gap-2 mb-4;
+}
+
+@utility section-title {
+  @apply text-sm font-semibold text-gray-700 flex items-center gap-2;
+}
+
+@utility empty-state {
+  @apply flex flex-col items-center justify-center py-12 text-center;
+}
+
+@utility empty-state-icon {
+  @apply text-gray-300 mb-3;
+}
+
+@utility empty-state-text {
+  @apply text-sm text-gray-400 font-medium;
+}
+
+@utility empty-state-sub {
+  @apply text-xs text-gray-300 mt-1;
+}
+
+@utility code-input {
+  @apply w-full min-w-0 h-14 border border-gray-200 rounded-xl px-3 py-0 text-sm
+         placeholder:text-gray-400 text-gray-900
+         focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400
+         bg-white transition-colors
+         text-center text-2xl font-mono font-bold uppercase;
+  letter-spacing: 0.4em;
+  line-height: 3.5rem;
+}
+
+@utility toggle-label {
+  @apply relative inline-flex items-center cursor-pointer;
+}
+
+@utility toggle-input {
+  @apply sr-only;
+}
+
+@utility toggle-track {
+  @apply w-11 h-6 bg-gray-200 rounded-full;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+@utility nav-pill-active {
+  @apply relative font-semibold;
+  background: rgba(255,255,255,0.15);
+  color: white;
+}
+
+@utility gradient-blue {
+  background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%);
+}
+
+@utility gradient-green {
+  background: linear-gradient(135deg, #065F46 0%, #059669 100%);
+}
+
+@utility gradient-purple {
+  background: linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%);
+}
+
+@utility gradient-orange {
+  background: linear-gradient(135deg, #C2410C 0%, #EA580C 100%);
+}
+
+@utility hover-lift {
+  @apply transition-all duration-200;
+}
+
+@utility spinner {
+  @apply animate-spin rounded-full border-2 border-current border-t-transparent;
+}
+
+/* ── Non-utility overrides ────────────────────────────────────── */
+.card:hover { box-shadow: var(--shadow-md); }
+.btn-primary:hover { box-shadow: 0 4px 12px rgba(37,99,235,0.35); }
+
+.input-field:hover:not(:focus) { border-color: #d1d5db; }
+
+select.input-field {
+  line-height: normal;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+textarea.input-field {
+  height: auto;
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+  line-height: 1.5;
+}
+
+.divider::before, .divider::after {
+  content: '';
+  @apply flex-1 h-px bg-gray-100;
+}
+
+.nav-pill-active::before {
+  content: '';
+  @apply absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-white rounded-r-full;
+}
+
+.stat-card .stat-icon {
+  @apply w-10 h-10 rounded-xl flex items-center justify-center mb-1;
+}
+.stat-card .stat-value {
+  @apply text-2xl font-bold text-gray-900;
+}
+.stat-card .stat-label {
+  @apply text-xs text-gray-500 font-medium;
+}
+
+.data-table th {
+  @apply text-left text-xs font-semibold text-gray-500 uppercase tracking-wider
+         py-3 px-4 bg-gray-50 border-b border-gray-100;
+}
+.data-table td {
+  @apply py-3 px-4 border-b border-gray-50 text-gray-700;
+}
+.data-table tr:last-child td { border-bottom: 0; }
+.data-table tr:hover td { background-color: rgba(249,250,251,0.6); }
+
+.toggle-track::after {
+  content: '';
+  @apply absolute top-0.5 left-0.5 bg-white rounded-full h-5 w-5 transition-all;
+}
+.toggle-input:checked ~ .toggle-track {
+  @apply bg-blue-600;
+}
+.toggle-input:checked ~ .toggle-track::after {
+  @apply translate-x-5;
+}
+
+.hover-lift:hover {
+  @apply -translate-y-0.5;
+  box-shadow: var(--shadow-md);
+}
+
+@media (max-width: 480px) {
+  .grid.grid-cols-2,
+  .grid.grid-cols-3,
+  .grid.grid-cols-4 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+  .btn:not(.btn-icon) {
+    min-height: 2.5rem;
+  }
+}
