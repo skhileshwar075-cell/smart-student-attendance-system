@@ -42,7 +42,7 @@ class ActiveSessionsAdapter(
             }
             binding.tvSessionType.text = session.sessionType.replaceFirstChar { it.uppercase() }
             binding.tvCode.text = when {
-                !session.code.isNullOrBlank() -> session.code!!
+                !session.code.isNullOrBlank() -> session.code
                 else -> "—"
             }
 
@@ -160,10 +160,11 @@ class ActiveSessionsAdapter(
             try {
                 val sdf = SimpleDateFormat(fmt, Locale.getDefault())
                 sdf.timeZone = TimeZone.getTimeZone("UTC")
-                return sdf.parse(expiresAt)!!
+                val parsed = sdf.parse(expiresAt)
+                if (parsed != null) return parsed
             } catch (_: Exception) {}
         }
-        throw IllegalArgumentException("Cannot parse date: $expiresAt")
+        return Date(0) // Safe fallback to epoch if parsing fails
     }
 
     private fun formatMs(ms: Long): String {

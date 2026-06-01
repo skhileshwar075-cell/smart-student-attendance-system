@@ -1,39 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-
     <item
         android:id="@+id/teacherDashboardFragment"
         android:icon="@android:drawable/ic_menu_today"
         android:title="Dashboard" />
-
-    <item
-        android:id="@+id/teacherStudentsFragment"
-        android:icon="@android:drawable/ic_menu_myplaces"
-        android:title="Students" />
-
     <item
         android:id="@+id/takeAttendanceFragment"
         android:icon="@android:drawable/ic_menu_edit"
         android:title="Attendance" />
-
-    <item
-        android:id="@+id/activeSessionsFragment"
-        android:icon="@android:drawable/ic_menu_recent_history"
-        android:title="Sessions" />
-
     <item
         android:id="@+id/teacherReportsFragment"
-        android:icon="@android:drawable/ic_menu_info_details"
+        android:icon="@android:drawable/ic_menu_agenda"
         android:title="Reports" />
-
     <item
         android:id="@+id/teacherRequestsFragment"
-        android:icon="@android:drawable/ic_menu_agenda"
+        android:icon="@android:drawable/ic_menu_help"
         android:title="Requests" />
-
     <item
         android:id="@+id/profileFragment"
-        android:icon="@android:drawable/ic_menu_my_calendar"
-        android:title="Profile" />
-
+        android:icon="@android:drawable/ic_menu_more"
+        android:title="More" />
 </menu>

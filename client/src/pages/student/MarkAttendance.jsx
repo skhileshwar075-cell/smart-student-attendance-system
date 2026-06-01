@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { MapPin, Hash, Wifi, CheckCircle, Clock, AlertCircle, Shield } from 'lucide-react';
+import { MapPin, Hash, Wifi, CheckCircle, Clock, AlertCircle, Shield, QrCode } from 'lucide-react';
 import { useGeolocation } from '../../hooks/useGeolocation';
 import FaceCapture from '../../components/FaceCapture';
+import QRScanner from '../../components/QRScanner';
 
 export default function MarkAttendance() {
   const [sessions, setSessions] = useState([]);
@@ -11,8 +12,11 @@ export default function MarkAttendance() {
   const [marking, setMarking] = useState(false);
   const [message, setMessage] = useState(null);
   const [showFaceCapture, setShowFaceCapture] = useState(false);
+  const [showQrScanner, setShowQrScanner] = useState(false);
   const [pendingMark, setPendingMark] = useState(null);
   const [faceVerified, setFaceVerified] = useState(false);
+  const [faceEmbedding, setFaceEmbedding] = useState(null);
+  const [qrError, setQrError] = useState('');
   const { location, error: locError, loading: locLoading, getLocation } = useGeolocation();
 
   useEffect(() => {
@@ -25,29 +29,68 @@ export default function MarkAttendance() {
     axios.get('/api/student/sessions/active').then(r => setSessions(r.data.sessions || [])).finally(() => setLoading(false));
   };
 
-  const initiateMarkBySession = (sessionId) => {
-    setPendingMark({ type: 'session', sessionId });
+  const initiateMarkBySession = (session) => {
+    setPendingMark({ type: 'session', session });
     setShowFaceCapture(true);
   };
 
   const initiateMarkByCode = () => {
-    if (!code.trim()) return;
-    setPendingMark({ type: 'code', code: code.trim() });
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed) {
+      setMessage({ type: 'error', text: 'Enter a valid attendance code before submitting.' });
+      return;
+    }
+    if (!/^[A-Z0-9]{4,8}$/.test(trimmed)) {
+      setMessage({ type: 'error', text: 'Attendance code must be 4 to 8 uppercase letters or digits.' });
+      return;
+    }
+    setCode(trimmed);
+    setPendingMark({ type: 'code', code: trimmed });
     setShowFaceCapture(true);
+    setQrError('');
   };
 
-  const handleFaceVerified = async (verified) => {
+  const handleQrDetected = async (rawData) => {
+    const trimmed = String(rawData || '').trim();
+    let extracted = trimmed;
+    const parts = trimmed.split(':');
+    if (parts.length >= 4 && parts[0] === 'SMARTATTEND') {
+      extracted = parts[2] || '';
+    }
+    extracted = extracted.toUpperCase();
+    if (!/^[A-Z0-9]{4,8}$/.test(extracted)) {
+      setQrError('Scanned QR did not contain a valid attendance code.');
+      return;
+    }
+    setCode(extracted);
+    setShowQrScanner(false);
+    setQrError('');
+    await doMark({ type: 'code', code: extracted }, false);
+  };
+
+  const openQrScanner = () => {
+    setQrError('');
+    setShowQrScanner(true);
+  };
+
+  const closeQrScanner = () => {
+    setShowQrScanner(false);
+  };
+
+  const handleFaceVerified = async (verified, embedding) => {
     setFaceVerified(verified);
+    setFaceEmbedding(embedding || null);
     setShowFaceCapture(false);
-    if (pendingMark) await doMark(pendingMark, verified);
+    if (pendingMark) await doMark(pendingMark, verified, embedding);
   };
 
   const handleFaceSkip = async () => {
+    setFaceEmbedding(null);
     setShowFaceCapture(false);
-    if (pendingMark) await doMark(pendingMark, false);
+    if (pendingMark) await doMark(pendingMark, false, null);
   };
 
-  const doMark = async (markData, faceVerifiedStatus) => {
+  const doMark = async (markData, faceVerifiedStatus, embedding) => {
     setMarking(true);
     setMessage(null);
     try {
@@ -56,12 +99,14 @@ export default function MarkAttendance() {
         geo_lng: location?.lng,
         face_verified: faceVerifiedStatus,
       };
-      if (markData.type === 'session') payload.session_id = markData.sessionId;
+      if (embedding) payload.face_embedding = embedding;
+      if (markData.type === 'session') payload.session_id = markData.session?.id || markData.sessionId;
       else { payload.code = markData.code; setCode(''); }
 
       await axios.post('/api/student/attendance/mark', payload);
       setMessage({ type: 'success', text: `Attendance marked!${faceVerifiedStatus ? ' (Face verified ✓)' : ''}` });
       setPendingMark(null);
+      setFaceEmbedding(null);
       fetchSessions();
     } catch (err) {
       setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to mark attendance' });
@@ -79,16 +124,36 @@ export default function MarkAttendance() {
     return `${mins}m ${secs}s`;
   };
 
+  if (showQrScanner) {
+    return (
+      <div className="space-y-4 max-w-2xl mx-auto">
+        <div className="attendance-card bg-blue-50 border border-blue-200">
+          <div className="flex items-center gap-2 text-blue-700 text-sm mb-1">
+            <QrCode size={16} /> <span className="font-medium">Scan Attendance QR Code</span>
+          </div>
+          <p className="text-xs text-blue-500">Point your camera at the session QR code to capture the attendance code.</p>
+        </div>
+        <QRScanner onDetected={handleQrDetected} onCancel={closeQrScanner} />
+        {qrError && <p className="text-xs text-red-500 mt-2">{qrError}</p>}
+      </div>
+    );
+  }
+
   if (showFaceCapture) {
+    const requiresFace = pendingMark?.type === 'session' && pendingMark.session?.session_type === 'secure';
     return (
       <div className="space-y-4 max-w-2xl mx-auto">
         <div className="attendance-card bg-blue-50 border border-blue-200">
           <div className="flex items-center gap-2 text-blue-700 text-sm mb-1">
             <Shield size={16} /> <span className="font-medium">Secure Attendance Verification</span>
           </div>
-          <p className="text-xs text-blue-500">Complete face scan for secure attendance or skip to use code only</p>
+          <p className="text-xs text-blue-500">
+            {requiresFace
+              ? 'Face scan is required for this secure session.'
+              : 'Complete face scan for secure attendance or skip to use code only.'}
+          </p>
         </div>
-        <FaceCapture onVerified={handleFaceVerified} onSkip={handleFaceSkip} />
+        <FaceCapture onVerified={handleFaceVerified} onSkip={handleFaceSkip} allowSkip={!requiresFace} />
       </div>
     );
   }
@@ -128,13 +193,19 @@ export default function MarkAttendance() {
 
       <div className="attendance-card">
         <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2"><Hash size={16} /> Enter Attendance Code</h3>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-col sm:flex-row">
           <input type="text" value={code} onChange={e => setCode(e.target.value.toUpperCase())} onKeyDown={e => e.key === 'Enter' && initiateMarkByCode()}
             placeholder="Enter 6-digit code" maxLength={8}
             className="input-field flex-1 text-center text-xl font-mono tracking-widest uppercase" />
-          <button onClick={initiateMarkByCode} disabled={marking || !code.trim()} className="btn-primary px-4">Submit</button>
+          <div className="flex gap-2">
+            <button onClick={initiateMarkByCode} disabled={marking || !code.trim()} className="btn-primary px-4">Submit</button>
+            <button onClick={openQrScanner} disabled={marking} className="btn-secondary px-4 flex items-center gap-2">
+              <QrCode size={16} /> Scan QR
+            </button>
+          </div>
         </div>
-        <p className="text-xs text-gray-400 mt-2 flex items-center gap-1"><Shield size={11} /> Face verification will be requested for secure attendance</p>
+        {qrError && <p className="text-xs text-red-500 mt-2">{qrError}</p>}
+        <p className="text-xs text-gray-400 mt-2 flex items-center gap-1"><Shield size={11} /> Face verification will be requested for secure attendance sessions</p>
       </div>
 
       <div className="attendance-card">
@@ -166,7 +237,7 @@ export default function MarkAttendance() {
                     <Clock size={12} />
                     <span>{timeLeft(s.expires_at)}</span>
                   </div>
-                  <button onClick={() => initiateMarkBySession(s.id)} disabled={marking}
+                  <button onClick={() => initiateMarkBySession(s)} disabled={marking}
                     className="btn-primary py-1.5 px-3 text-xs flex items-center gap-1">
                     <Shield size={12} /> {marking ? 'Marking...' : 'Mark Present'}
                   </button>

@@ -6,200 +6,295 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ScrollView
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/background">
+        android:layout_height="match_parent">
 
-        <LinearLayout
+        <include
+            android:id="@+id/layoutShimmer"
+            layout="@layout/layout_teacher_dashboard_shimmer"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:layout_height="match_parent"
+            android:visibility="gone" />
 
-            <TextView
-                android:id="@+id/tvError"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/red_600"
-                android:padding="12dp"
-                android:visibility="gone"
-                android:background="@color/red_50" />
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/scrollView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/background">
 
             <LinearLayout
-                android:id="@+id/contentLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
+                android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tvWelcome"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Welcome, Teacher"
-                    android:textSize="22sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/gray_900"
-                    android:layout_marginBottom="16dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="16dp">
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        app:cardCornerRadius="12dp"
-                        app:cardElevation="2dp"
-                        app:cardBackgroundColor="@color/blue_50"
-                        android:layout_marginEnd="8dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:padding="14dp"
-                            android:gravity="center">
-
-                            <TextView
-                                android:id="@+id/tvSubjectCount"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="—"
-                                android:textSize="28sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/brand_primary" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Subjects"
-                                android:textSize="12sp"
-                                android:textColor="@color/blue_700" />
-
-                        </LinearLayout>
-
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        app:cardCornerRadius="12dp"
-                        app:cardElevation="2dp"
-                        app:cardBackgroundColor="@color/amber_50"
-                        android:layout_marginStart="8dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:padding="14dp"
-                            android:gravity="center">
-
-                            <TextView
-                                android:id="@+id/tvPendingRequests"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="—"
-                                android:textSize="28sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/amber_500" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Pending Requests"
-                                android:textSize="12sp"
-                                android:textColor="@color/amber_500" />
-
-                        </LinearLayout>
-
-                    </com.google.android.material.card.MaterialCardView>
-
-                </LinearLayout>
-
+                <!-- Hero Header -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp"
-                    android:layout_marginBottom="16dp">
+                    app:cardElevation="8dp"
+                    app:cardCornerRadius="0dp"
+                    app:cardBackgroundColor="@color/brand_primary">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="16dp">
+                        android:padding="24dp"
+                        android:background="@drawable/pill_violet"
+                        android:backgroundTint="#1A000000">
 
                         <TextView
+                            android:id="@+id/tvWelcome"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Today's Attendance"
-                            android:textSize="14sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/gray_800"
-                            android:layout_marginBottom="12dp" />
+                            android:text="Welcome, Teacher"
+                            android:textColor="@color/white"
+                            android:textSize="28sp"
+                            android:textStyle="bold" />
 
+                        <TextView
+                            android:id="@+id/tvHeaderDate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Wednesday, 22 April 2026"
+                            android:textColor="#CCFFFFFF"
+                            android:textSize="14sp"
+                            android:layout_marginTop="4dp" />
+
+                        <!-- Today's Stats Cards -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal">
+                            android:orientation="horizontal"
+                            android:layout_marginTop="24dp">
 
-                            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-                                <TextView android:id="@+id/tvPresentToday" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/green_600" />
-                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Present" android:textSize="11sp" android:textColor="@color/gray_500" />
-                            </LinearLayout>
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                app:cardCornerRadius="16dp"
+                                app:cardElevation="0dp"
+                                app:cardBackgroundColor="#26FFFFFF"
+                                android:layout_marginEnd="8dp">
 
-                            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-                                <TextView android:id="@+id/tvAbsentToday" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/red_500" />
-                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Absent" android:textSize="11sp" android:textColor="@color/gray_500" />
-                            </LinearLayout>
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="vertical"
+                                    android:padding="16dp"
+                                    android:gravity="center">
 
-                            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-                                <TextView android:id="@+id/tvTotalToday" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/gray_700" />
-                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Total" android:textSize="11sp" android:textColor="@color/gray_500" />
-                            </LinearLayout>
+                                    <TextView
+                                        android:id="@+id/tvPresentToday"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="0"
+                                        android:textSize="24sp"
+                                        android:textStyle="bold"
+                                        android:textColor="@color/white" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Present"
+                                        android:textSize="11sp"
+                                        android:textColor="#CCFFFFFF" />
+                                </LinearLayout>
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                app:cardCornerRadius="16dp"
+                                app:cardElevation="0dp"
+                                app:cardBackgroundColor="#26FFFFFF"
+                                android:layout_marginHorizontal="4dp">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="vertical"
+                                    android:padding="16dp"
+                                    android:gravity="center">
+
+                                    <TextView
+                                        android:id="@+id/tvAbsentToday"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="0"
+                                        android:textSize="24sp"
+                                        android:textStyle="bold"
+                                        android:textColor="@color/white" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Absent"
+                                        android:textSize="11sp"
+                                        android:textColor="#CCFFFFFF" />
+                                </LinearLayout>
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                app:cardCornerRadius="16dp"
+                                app:cardElevation="0dp"
+                                app:cardBackgroundColor="#26FFFFFF"
+                                android:layout_marginStart="8dp">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="vertical"
+                                    android:padding="16dp"
+                                    android:gravity="center">
+
+                                    <TextView
+                                        android:id="@+id/tvTotalToday"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="0"
+                                        android:textSize="24sp"
+                                        android:textStyle="bold"
+                                        android:textColor="@color/white" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Total"
+                                        android:textSize="11sp"
+                                        android:textColor="#CCFFFFFF" />
+                                </LinearLayout>
+                            </com.google.android.material.card.MaterialCardView>
 
                         </LinearLayout>
-
                     </LinearLayout>
-
                 </com.google.android.material.card.MaterialCardView>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="My Subjects"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/gray_800"
-                    android:layout_marginBottom="10dp" />
-
-                <LinearLayout
-                    android:id="@+id/subjectsLayout"
+                <include
+                    android:id="@+id/layoutEmpty"
+                    layout="@layout/layout_empty_state"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical" />
-
-                <TextView
-                    android:id="@+id/tvNoSubjects"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="No subjects assigned"
-                    android:gravity="center"
-                    android:padding="20dp"
-                    android:textColor="@color/gray_400"
+                    android:layout_marginTop="64dp"
                     android:visibility="gone" />
 
+                <LinearLayout
+                    android:id="@+id/contentLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="24dp">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="2dp"
+                            app:cardBackgroundColor="@color/blue_50"
+                            android:layout_marginEnd="8dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:padding="14dp"
+                                android:gravity="center">
+
+                                <TextView
+                                    android:id="@+id/tvSubjectCount"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0"
+                                    android:textSize="28sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/brand_primary" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Subjects"
+                                    android:textSize="12sp"
+                                    android:textColor="@color/blue_700" />
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="2dp"
+                            app:cardBackgroundColor="@color/amber_50"
+                            android:layout_marginStart="8dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:padding="14dp"
+                                android:gravity="center">
+
+                                <TextView
+                                    android:id="@+id/tvPendingRequests"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0"
+                                    android:textSize="28sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/amber_500" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Pending Requests"
+                                    android:textSize="12sp"
+                                    android:textColor="@color/amber_500" />
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="MY SUBJECTS"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/gray_500"
+                        android:letterSpacing="0.1"
+                        android:layout_marginBottom="12dp"
+                        android:layout_marginStart="4dp" />
+
+                    <LinearLayout
+                        android:id="@+id/subjectsLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                    <TextView
+                        android:id="@+id/tvNoSubjects"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="No subjects assigned"
+                        android:gravity="center"
+                        android:padding="20dp"
+                        android:textColor="@color/gray_400"
+                        android:visibility="gone" />
+
+                </LinearLayout>
             </LinearLayout>
-
-        </LinearLayout>
-
-    </ScrollView>
-
+        </androidx.core.widget.NestedScrollView>
+    </RelativeLayout>
 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

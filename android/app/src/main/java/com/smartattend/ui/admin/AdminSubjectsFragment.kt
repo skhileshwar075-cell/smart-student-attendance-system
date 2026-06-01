@@ -11,7 +11,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
@@ -63,6 +65,7 @@ class AdminSubjectsFragment : Fragment() {
         })
 
         binding.fabAddSubject.setOnClickListener { showCreateDialog() }
+        binding.layoutEmpty.btnRetry.setOnClickListener { viewModel.loadSubjects() }
         setupObservers()
     }
 
@@ -90,6 +93,7 @@ class AdminSubjectsFragment : Fragment() {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_subject_form, null)
         val etName = dialogView.findViewById<TextInputEditText>(R.id.etName)
         val etCode = dialogView.findViewById<TextInputEditText>(R.id.etCode)
+        val etCredits = dialogView.findViewById<TextInputEditText>(R.id.etCredits)
         val spinnerClass = dialogView.findViewById<Spinner>(R.id.spinnerClass)
         val spinnerTeacher = dialogView.findViewById<Spinner>(R.id.spinnerTeacher)
 
@@ -102,6 +106,7 @@ class AdminSubjectsFragment : Fragment() {
         if (existing != null) {
             etName.setText(existing.name)
             etCode.setText(existing.code)
+            etCredits.setText(existing.credits.toString())
             val classIdx = classes.indexOfFirst { it.id == existing.classId }
             val teacherIdx = teachers.indexOfFirst { it.id == existing.teacherId }
             if (classIdx >= 0) spinnerClass.setSelection(classIdx)
@@ -114,16 +119,21 @@ class AdminSubjectsFragment : Fragment() {
             .setPositiveButton(if (existing == null) "Create" else "Save") { _, _ ->
                 val name = etName.text.toString().trim()
                 val code = etCode.text.toString().trim().uppercase()
-                if (name.isBlank() || code.isBlank()) {
-                    Toast.makeText(requireContext(), "Name and code are required", Toast.LENGTH_SHORT).show()
+                val creditsStr = etCredits.text.toString().trim()
+                
+                if (name.isBlank() || code.isBlank() || creditsStr.isBlank()) {
+                    Toast.makeText(requireContext(), "Name, code and credits are required", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
+                
+                val credits = creditsStr.toIntOrNull() ?: 0
                 val selectedClass = classes.getOrNull(spinnerClass.selectedItemPosition)
                 val selectedTeacher = teachers.getOrNull(spinnerTeacher.selectedItemPosition)
+                
                 if (existing == null) {
-                    viewModel.createSubject(name, code, selectedClass?.id, selectedTeacher?.id)
+                    viewModel.createSubject(name, code, selectedClass?.id, selectedTeacher?.id, credits)
                 } else {
-                    viewModel.updateSubject(existing.id, name, code, selectedClass?.id, selectedTeacher?.id)
+                    viewModel.updateSubject(existing.id, name, code, selectedClass?.id, selectedTeacher?.id, credits)
                 }
             }
             .setNegativeButton("Cancel", null)
@@ -142,53 +152,71 @@ class AdminSubjectsFragment : Fragment() {
     // ── Observers ─────────────────────────────────────────────────────────────
 
     private fun setupObservers() {
-        lifecycleScope.launch {
-            viewModel.subjects.collect { state ->
-                when (state) {
-                    is Resource.Loading -> {
-                        binding.swipeRefresh.isRefreshing = true
-                        binding.tvEmpty.visibility = View.GONE
-                    }
-                    is Resource.Success -> {
-                        binding.swipeRefresh.isRefreshing = false
-                        val list = state.data.subjects
-                        adapter.submitList(list)
-                        binding.tvEmpty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
-                        binding.tvCount.text = "${list.size} subjects"
-                    }
-                    is Resource.Error -> {
-                        binding.swipeRefresh.isRefreshing = false
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.subjects.collect { state ->
+                    when (state) {
+                        is Resource.Loading -> {
+                            binding.swipeRefresh.isRefreshing = true
+                            binding.layoutEmpty.root.visibility = View.GONE
+                        }
+                        is Resource.Success -> {
+                            binding.swipeRefresh.isRefreshing = false
+                            val list = state.data.subjects
+                            adapter.submitList(list)
+                            if (list.isEmpty()) {
+                                binding.layoutEmpty.root.visibility = View.VISIBLE
+                                binding.layoutEmpty.tvEmptyTitle.text = "No Subjects Found"
+                                binding.layoutEmpty.tvEmptyMessage.text = "Try a different search or add a subject."
+                                binding.layoutEmpty.btnRetry.visibility = View.GONE
+                            } else {
+                                binding.layoutEmpty.root.visibility = View.GONE
+                            }
+                            binding.tvCount.text = "${list.size} subjects"
+                        }
+                        is Resource.Error -> {
+                            binding.swipeRefresh.isRefreshing = false
+                            binding.layoutEmpty.root.visibility = View.VISIBLE
+                            binding.layoutEmpty.tvEmptyTitle.text = "Error Loading Subjects"
+                            binding.layoutEmpty.tvEmptyMessage.text = state.message
+                            binding.layoutEmpty.btnRetry.visibility = View.VISIBLE
+                        }
                     }
                 }
             }
         }
 
-        lifecycleScope.launch {
-            viewModel.classes.collect { state ->
-                if (state is Resource.Success) classes = state.data.classes
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.classes.collect { state ->
+                    if (state is Resource.Success) classes = state.data.classes
+                }
             }
         }
 
-        lifecycleScope.launch {
-            viewModel.teachers.collect { state ->
-                if (state is Resource.Success) teachers = state.data.teachers
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.teachers.collect { state ->
+                    if (state is Resource.Success) teachers = state.data.teachers
+                }
             }
         }
 
-        lifecycleScope.launch {
-            viewModel.actionState.collect { state ->
-                when (state) {
-                    is Resource.Success -> {
-                        Toast.makeText(requireContext(), state.data, Toast.LENGTH_SHORT).show()
-                        viewModel.clearActionState()
-                        viewModel.loadSubjects()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.actionState.collect { state ->
+                    when (state) {
+                        is Resource.Success -> {
+                            Toast.makeText(requireContext(), state.data, Toast.LENGTH_SHORT).show()
+                            viewModel.clearActionState()
+                            viewModel.loadSubjects()
+                        }
+                        is Resource.Error -> {
+                            Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                            viewModel.clearActionState()
+                        }
+                        else -> {}
                     }
-                    is Resource.Error -> {
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
-                        viewModel.clearActionState()
-                    }
-                    else -> {}
                 }
             }
         }

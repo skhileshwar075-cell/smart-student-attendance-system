@@ -1,3 +1,14 @@
+/*
+  Seed script for SmartAttend.
+
+  This script inserts demo Admin, Teacher, Student, branch, class, subject,
+  and attendance data for development and testing. It only runs if the
+  admin account `admin@smartattend.edu` is not already present.
+
+  Use this file for reference when reviewing seeded users and the demo
+  accounts configured for the application.
+*/
+
 const { query } = require('./database');
 const bcrypt = require('bcryptjs');
 

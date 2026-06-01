@@ -14,12 +14,15 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.smartattend.R
 import com.smartattend.databinding.FragmentAdminClassesBinding
 import com.smartattend.domain.model.Branch
 import com.smartattend.domain.model.SchoolClass
 import com.smartattend.util.Resource
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -48,6 +51,7 @@ class AdminClassesFragment : Fragment() {
 
         binding.swipeRefresh.setOnRefreshListener { viewModel.loadClasses() }
         binding.fabAddClass.setOnClickListener { showCreateDialog() }
+        binding.layoutEmpty.btnRetry.setOnClickListener { viewModel.loadClasses() }
         setupObservers()
     }
 
@@ -115,47 +119,64 @@ class AdminClassesFragment : Fragment() {
     // ── Observers ─────────────────────────────────────────────────────────────
 
     private fun setupObservers() {
-        lifecycleScope.launch {
-            viewModel.classes.collect { state ->
-                when (state) {
-                    is Resource.Loading -> {
-                        binding.swipeRefresh.isRefreshing = true
-                        binding.tvEmpty.visibility = View.GONE
-                    }
-                    is Resource.Success -> {
-                        binding.swipeRefresh.isRefreshing = false
-                        val list = state.data.classes
-                        adapter.submitList(list)
-                        binding.tvEmpty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
-                        binding.tvCount.text = "${list.size} classes"
-                    }
-                    is Resource.Error -> {
-                        binding.swipeRefresh.isRefreshing = false
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.classes.collectLatest { state ->
+                    when (state) {
+                        is Resource.Loading -> {
+                            binding.swipeRefresh.isRefreshing = true
+                            binding.layoutEmpty.root.visibility = View.GONE
+                        }
+                        is Resource.Success -> {
+                            binding.swipeRefresh.isRefreshing = false
+                            val list = state.data.classes
+                            adapter.submitList(list)
+                            
+                            val isEmpty = list.isEmpty()
+                            binding.layoutEmpty.root.visibility = if (isEmpty) View.VISIBLE else View.GONE
+                            if (isEmpty) {
+                                binding.layoutEmpty.tvEmptyTitle.text = "No Classes Found"
+                                binding.layoutEmpty.tvEmptyMessage.text = "Tap the + button to create a new class."
+                                binding.layoutEmpty.btnRetry.visibility = View.GONE
+                            }
+                            binding.tvCount.text = "${list.size} classes"
+                        }
+                        is Resource.Error -> {
+                            binding.swipeRefresh.isRefreshing = false
+                            binding.layoutEmpty.root.visibility = View.VISIBLE
+                            binding.layoutEmpty.tvEmptyTitle.text = "Error Loading Classes"
+                            binding.layoutEmpty.tvEmptyMessage.text = state.message
+                            binding.layoutEmpty.btnRetry.visibility = View.VISIBLE
+                            binding.layoutEmpty.btnRetry.setOnClickListener { viewModel.loadClasses() }
+                        }
                     }
                 }
             }
         }
 
-        lifecycleScope.launch {
-            viewModel.branches.collect { state ->
-                if (state is Resource.Success) branches = state.data.branches
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.branches.collectLatest { state ->
+                    if (state is Resource.Success) branches = state.data.branches
+                }
             }
         }
 
-        lifecycleScope.launch {
-            viewModel.actionState.collect { state ->
-                when (state) {
-                    is Resource.Success -> {
-                        Toast.makeText(requireContext(), state.data, Toast.LENGTH_SHORT).show()
-                        viewModel.clearActionState()
-                        viewModel.loadClasses()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.actionState.collectLatest { state ->
+                    when (state) {
+                        is Resource.Success -> {
+                            Toast.makeText(requireContext(), state.data, Toast.LENGTH_SHORT).show()
+                            viewModel.clearActionState()
+                            viewModel.loadClasses()
+                        }
+                        is Resource.Error -> {
+                            Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                            viewModel.clearActionState()
+                        }
+                        else -> {}
                     }
-                    is Resource.Error -> {
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
-                        viewModel.clearActionState()
-                    }
-                    else -> {}
                 }
             }
         }

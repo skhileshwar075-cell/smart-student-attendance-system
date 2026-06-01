@@ -123,6 +123,11 @@ export default function Layout({ children }) {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
+    const initialOpen = window.innerWidth >= 1024;
+    setSidebarOpen(initialOpen);
+  }, []);
+
+  useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 60000);
     return () => clearInterval(t);
   }, []);
@@ -152,8 +157,7 @@ export default function Layout({ children }) {
         fixed inset-y-0 left-0 z-30 w-[min(16rem,85vw)] flex flex-col
         bg-gradient-to-b ${meta.gradient}
         transform transition-transform duration-300 ease-in-out
-        lg:translate-x-0 lg:static lg:z-auto
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${sidebarOpen ? 'translate-x-0 lg:translate-x-0' : '-translate-x-full lg:-translate-x-full'}
       `}>
         {/* Brand */}
         <div className="px-4 pt-5 pb-4 border-b border-white/10">
@@ -227,15 +231,22 @@ export default function Layout({ children }) {
       </aside>
 
       {/* ── Main Content ─────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0 max-w-full">
+      <div className={`flex-1 flex flex-col min-w-0 max-w-full transition-all duration-300 ${sidebarOpen ? 'lg:pl-[16rem]' : 'lg:pl-0'}`}>
         {/* Header */}
-        <header className="bg-white border-b border-gray-100 sticky top-0 z-10" style={{ boxShadow: 'var(--shadow-sm)' }}>
-          <div className="flex items-center gap-2 px-3 py-3 sm:gap-3 sm:px-4">
+        <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 h-16" style={{ boxShadow: 'var(--shadow-sm)' }}>
+          <div className="flex items-center gap-2 h-full px-3 sm:gap-3 sm:px-4">
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden w-9 h-9 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
             >
               <Menu size={20} />
+            </button>
+            <button
+              onClick={() => setSidebarOpen(prev => !prev)}
+              className="hidden lg:inline-flex w-9 h-9 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
+              aria-label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+            >
+              {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
 
             <div className="flex-1 min-w-0">
@@ -261,7 +272,7 @@ export default function Layout({ children }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 min-w-0 overflow-y-auto p-3 sm:p-5">
+        <main className="flex-1 min-w-0 overflow-y-auto mt-16 p-3 sm:p-5">
           {children}
         </main>
       </div>

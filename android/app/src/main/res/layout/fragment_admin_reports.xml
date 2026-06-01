@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipeRefresh"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@color/background">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@color/surface"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Attendance Reports"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/gray_900"
+                android:layout_marginBottom="12dp" />
+
+            <Spinner
+                android:id="@+id/spinnerClass"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_input_rounded"
+                android:layout_marginBottom="10dp" />
+
+            <Spinner
+                android:id="@+id/spinnerSubject"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_input_rounded"
+                android:layout_marginBottom="10dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="10dp">
+
+                <EditText
+                    android:id="@+id/etFrom"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="From (YYYY-MM-DD)"
+                    android:inputType="date"
+                    android:textSize="12sp"
+                    android:background="@drawable/bg_input_rounded"
+                    android:padding="10dp"
+                    android:layout_marginEnd="6dp" />
+
+                <EditText
+                    android:id="@+id/etTo"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="To (YYYY-MM-DD)"
+                    android:inputType="date"
+                    android:textSize="12sp"
+                    android:background="@drawable/bg_input_rounded"
+                    android:padding="10dp" />
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/etStudentSearch"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:hint="Student ID"
+                android:inputType="text"
+                android:textSize="12sp"
+                android:background="@drawable/bg_input_rounded"
+                android:padding="10dp"
+                android:layout_marginBottom="12dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvRowCount"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLoadReport"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="Load Report"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <include
+            android:id="@+id/layoutEmpty"
+            layout="@layout/layout_empty_state"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvRecords"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+    </LinearLayout>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

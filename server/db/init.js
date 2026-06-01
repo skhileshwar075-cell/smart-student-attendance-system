@@ -92,7 +92,7 @@ async function initDB() {
         subject_id INTEGER REFERENCES subjects(id),
         session_id INTEGER REFERENCES attendance_sessions(id),
         date DATE NOT NULL,
-        status VARCHAR(20) NOT NULL CHECK (status IN ('present', 'absent', 'late')),
+        status VARCHAR(20) NOT NULL CHECK (status IN ('present', 'absent', 'late', 'holiday')),
         method VARCHAR(50) DEFAULT 'manual',
         marked_by INTEGER REFERENCES users(id),
         verified BOOLEAN DEFAULT true,

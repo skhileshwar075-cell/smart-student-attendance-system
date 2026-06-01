@@ -66,8 +66,12 @@ class TeacherRepository @Inject constructor(private val api: ApiService) {
     private suspend fun <T> safeCall(call: suspend () -> retrofit2.Response<T>): Resource<T> {
         return try {
             val response = call()
-            if (response.isSuccessful && response.body() != null) Resource.Success(response.body()!!)
-            else Resource.Error(response.errorBody()?.string() ?: "Error ${response.code()}")
+            val body = response.body()
+            if (response.isSuccessful && body != null) Resource.Success(body)
+            else {
+                val error = response.errorBody()?.string() ?: "Unknown error"
+                Resource.Error(error)
+            }
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Network error")
         }

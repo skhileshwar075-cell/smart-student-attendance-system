@@ -33,12 +33,13 @@ class TeacherReportsAdapter : ListAdapter<AttendanceReportRow, TeacherReportsAda
 
         val pct = item.percentage
         holder.tvPercentage.text = "${String.format("%.1f", pct)}%"
-        val color = when {
-            pct >= 75 -> "#16A34A"
-            pct >= 60 -> "#D97706"
-            else -> "#DC2626"
+        
+        val colorRes = when {
+            pct >= 75 -> R.color.green_600
+            pct >= 60 -> R.color.amber_500
+            else -> R.color.red_600
         }
-        holder.tvPercentage.setTextColor(Color.parseColor(color))
+        holder.tvPercentage.setTextColor(androidx.core.content.ContextCompat.getColor(holder.itemView.context, colorRes))
     }
 
     companion object {

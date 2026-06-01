@@ -183,15 +183,11 @@
 
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvEmpty"
+        <include
+            android:id="@+id/layoutEmpty"
+            layout="@layout/layout_empty_state"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Select a subject and tap Load Report"
-            android:gravity="center"
-            android:padding="40dp"
-            android:textColor="@color/gray_400"
-            android:visibility="gone" />
+            android:layout_height="wrap_content" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvReport"

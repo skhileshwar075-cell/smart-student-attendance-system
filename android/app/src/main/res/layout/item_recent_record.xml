@@ -12,7 +12,8 @@
         android:id="@+id/viewStatusDot"
         android:layout_width="8dp"
         android:layout_height="8dp"
-        android:layout_marginEnd="10dp" />
+        android:layout_marginEnd="12dp"
+        android:background="@drawable/circle_blue_solid" />
 
     <LinearLayout
         android:layout_width="0dp"

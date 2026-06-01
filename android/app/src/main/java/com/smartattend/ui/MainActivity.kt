@@ -94,6 +94,21 @@ class MainActivity : AppCompatActivity() {
         val bottomNav = binding.bottomNavigation
         bottomNav.setupWithNavController(navController)
 
+        // Navigation Guard: Prevent re-selecting the same item and rapid-tap issues
+        bottomNav.setOnItemSelectedListener { item ->
+            if (navController.currentDestination?.id == item.itemId) {
+                return@setOnItemSelectedListener false
+            }
+            
+            // Allow navigation but prevent multiple rapid clicks
+            try {
+                navController.navigate(item.itemId)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
         val menuResId = when (role) {
             "admin" -> R.menu.menu_admin
             "teacher" -> R.menu.menu_teacher

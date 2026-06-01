@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import * as XLSX from 'xlsx';
+let XLSX;
+const getXLSX = async () => {
+  if (!XLSX) {
+    XLSX = await import('xlsx');
+  }
+  return XLSX;
+};
 import { BarChart2, Download, AlertTriangle, Bell, TrendingDown, Search } from 'lucide-react';
 import { InputField } from '../../components/FormFields';
 import { useAuth } from '../../context/AuthContext';
@@ -106,9 +112,10 @@ export default function TeacherReports() {
     const a = document.createElement('a'); a.href = url; a.download = 'low-attendance-shortlist.csv'; a.click();
   };
 
-  const exportShortlistXLSX = () => {
+  const exportShortlistXLSX = async () => {
     if (shortlist.length === 0) { alert('No shortlist data. Generate the shortlist first.'); return; }
     const rows = buildShortlistRows(shortlist, getShortlistMeta());
+    const XLSX = await getXLSX();
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws['!cols'] = [{ wch: 25 }, { wch: 12 }, { wch: 20 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 12 }];
     const wb = XLSX.utils.book_new();

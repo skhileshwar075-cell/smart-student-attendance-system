@@ -14,6 +14,8 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.gms.location.*
 import com.smartattend.databinding.FragmentTakeAttendanceBinding
@@ -22,6 +24,7 @@ import com.smartattend.domain.model.AttendanceSession
 import com.smartattend.domain.model.Subject
 import com.smartattend.util.Resource
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -169,89 +172,103 @@ class TakeAttendanceFragment : Fragment() {
     // ── Observers ─────────────────────────────────────────────────────────────
 
     private fun setupObservers() {
-        lifecycleScope.launch {
-            viewModel.subjects.collect { subjects ->
-                if (subjects != null) {
-                    val adapter = ArrayAdapter(
-                        requireContext(),
-                        android.R.layout.simple_spinner_item,
-                        subjects.map { "${it.name} — ${it.className}" }
-                    )
-                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                    binding.spinnerSubject.adapter = adapter
-                    selectedSubject = subjects.firstOrNull()
-                }
-            }
-        }
-
-        lifecycleScope.launch {
-            viewModel.students.collect { students ->
-                if (students != null) {
-                    binding.rvStudents.adapter = ManualAttendanceAdapter(students)
-                    binding.tvStudentCount.text = "${students.size} students"
-                }
-            }
-        }
-
-        lifecycleScope.launch {
-            viewModel.sessionState.collect { state ->
-                when (state) {
-                    is Resource.Success -> {
-                        binding.sessionCodeLayout.visibility = View.VISIBLE
-                        binding.tvSessionCode.text = state.data.code ?: "—"
-                        binding.btnStartSession.visibility = View.GONE
-                        binding.btnStopSession.visibility = View.VISIBLE
-                        showToast("Session started! Code: ${state.data.code}")
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.subjects.collectLatest { subjects ->
+                    if (subjects != null) {
+                        val adapter = ArrayAdapter(
+                            requireContext(),
+                            android.R.layout.simple_spinner_item,
+                            subjects.map { "${it.name} — ${it.className}" }
+                        )
+                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                        binding.spinnerSubject.adapter = adapter
+                        selectedSubject = subjects.firstOrNull()
                     }
-                    is Resource.Error -> {
-                        showErrorDialog(viewModel.parseErrorMessage(state.message))
-                    }
-                    Resource.Loading -> {}
                 }
             }
         }
 
-        lifecycleScope.launch {
-            viewModel.saveState.collect { state ->
-                when (state) {
-                    is Resource.Success -> showToast(state.data.message)
-                    is Resource.Error   -> showToast(state.message)
-                    else -> {}
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.students.collectLatest { students ->
+                    if (students != null) {
+                        binding.rvStudents.adapter = ManualAttendanceAdapter(students)
+                        binding.tvStudentCount.text = "${students.size} students"
+                    }
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.sessionState.collectLatest { state ->
+                    when (state) {
+                        is Resource.Success -> {
+                            binding.sessionCodeLayout.visibility = View.VISIBLE
+                            binding.tvSessionCode.text = state.data.code ?: "—"
+                            binding.btnStartSession.visibility = View.GONE
+                            binding.btnStopSession.visibility = View.VISIBLE
+                            showToast("Session started! Code: ${state.data.code}")
+                        }
+                        is Resource.Error -> {
+                            showErrorDialog(viewModel.parseErrorMessage(state.message))
+                        }
+                        Resource.Loading -> {}
+                    }
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.saveState.collectLatest { state ->
+                    when (state) {
+                        is Resource.Success -> showToast(state.data.message)
+                        is Resource.Error -> showToast(state.message)
+                        else -> {}
+                    }
                 }
             }
         }
 
         // ── Active sessions section ────────────────────────────────────────────
-        lifecycleScope.launch {
-            viewModel.activeSessionsLoading.collect { loading ->
-                binding.activeSessionsProgress.visibility =
-                    if (loading) View.VISIBLE else View.GONE
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.activeSessionsLoading.collectLatest { loading ->
+                    binding.activeSessionsProgress.visibility =
+                        if (loading) View.VISIBLE else View.GONE
+                }
             }
         }
 
-        lifecycleScope.launch {
-            viewModel.activeSessions.collect { sessions ->
-                activeSessionsAdapter.submitList(sessions)
-                updateActiveSessionsEmptyState(sessions)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.activeSessions.collectLatest { sessions ->
+                    activeSessionsAdapter.submitList(sessions)
+                    updateActiveSessionsEmptyState(sessions)
+                }
             }
         }
 
-        lifecycleScope.launch {
-            viewModel.stopState.collect { state ->
-                when (state) {
-                    is Resource.Success -> {
-                        showToast("Session stopped")
-                        // Reset start/stop buttons if current session was stopped
-                        binding.btnStartSession.visibility = View.VISIBLE
-                        binding.btnStopSession.visibility = View.GONE
-                        binding.sessionCodeLayout.visibility = View.GONE
-                        viewModel.clearStopState()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.stopState.collectLatest { state ->
+                    when (state) {
+                        is Resource.Success -> {
+                            showToast("Session stopped")
+                            // Reset start/stop buttons if current session was stopped
+                            binding.btnStartSession.visibility = View.VISIBLE
+                            binding.btnStopSession.visibility = View.GONE
+                            binding.sessionCodeLayout.visibility = View.GONE
+                            viewModel.clearStopState()
+                        }
+                        is Resource.Error -> {
+                            showToast(viewModel.parseErrorMessage(state.message))
+                            viewModel.clearStopState()
+                        }
+                        else -> {}
                     }
-                    is Resource.Error -> {
-                        showToast(viewModel.parseErrorMessage(state.message))
-                        viewModel.clearStopState()
-                    }
-                    else -> {}
                 }
             }
         }

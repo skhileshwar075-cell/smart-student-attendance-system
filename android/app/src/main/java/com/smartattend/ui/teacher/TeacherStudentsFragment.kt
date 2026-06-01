@@ -15,10 +15,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import com.smartattend.R
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.smartattend.databinding.FragmentTeacherStudentsBinding
+import com.smartattend.databinding.LayoutEmptyStateBinding
 import com.smartattend.domain.model.Student
 import com.smartattend.util.Resource
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -135,41 +139,55 @@ class TeacherStudentsFragment : Fragment() {
     // ── Observers ─────────────────────────────────────────────────────────────
 
     private fun setupObservers() {
-        lifecycleScope.launch {
-            viewModel.students.collect { state ->
-                when (state) {
-                    is Resource.Loading -> {
-                        binding.swipeRefresh.isRefreshing = true
-                        binding.tvEmpty.visibility = View.GONE
-                    }
-                    is Resource.Success -> {
-                        binding.swipeRefresh.isRefreshing = false
-                        val list = state.data.students
-                        adapter.submitList(list)
-                        binding.tvEmpty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
-                        binding.tvCount.text = "${list.size} students"
-                    }
-                    is Resource.Error -> {
-                        binding.swipeRefresh.isRefreshing = false
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.students.collectLatest { state ->
+                    when (state) {
+                        is Resource.Loading -> {
+                            binding.swipeRefresh.isRefreshing = true
+                            binding.layoutEmpty.root.visibility = View.GONE
+                        }
+                        is Resource.Success -> {
+                            binding.swipeRefresh.isRefreshing = false
+                            val list = state.data.students
+                            adapter.submitList(list)
+                            
+                            val isEmpty = list.isEmpty()
+                            binding.layoutEmpty.root.visibility = if (isEmpty) View.VISIBLE else View.GONE
+                            if (isEmpty) {
+                                binding.layoutEmpty.tvEmptyTitle.text = "No students found"
+                                binding.layoutEmpty.tvEmptyMessage.text = "Tap + to add students to your class."
+                            }
+                            binding.tvCount.text = "${list.size} students"
+                        }
+                        is Resource.Error -> {
+                            binding.swipeRefresh.isRefreshing = false
+                            binding.layoutEmpty.root.visibility = View.VISIBLE
+                            binding.layoutEmpty.tvEmptyTitle.text = "Error loading students"
+                            binding.layoutEmpty.tvEmptyMessage.text = state.message
+                            binding.layoutEmpty.btnRetry.visibility = View.VISIBLE
+                            binding.layoutEmpty.btnRetry.setOnClickListener { viewModel.loadStudents() }
+                        }
                     }
                 }
             }
         }
 
-        lifecycleScope.launch {
-            viewModel.actionState.collect { state ->
-                when (state) {
-                    is Resource.Success -> {
-                        Toast.makeText(requireContext(), state.data, Toast.LENGTH_SHORT).show()
-                        viewModel.clearActionState()
-                        viewModel.loadStudents()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.actionState.collectLatest { state ->
+                    when (state) {
+                        is Resource.Success -> {
+                            Toast.makeText(requireContext(), state.data, Toast.LENGTH_SHORT).show()
+                            viewModel.clearActionState()
+                            viewModel.loadStudents()
+                        }
+                        is Resource.Error -> {
+                            Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                            viewModel.clearActionState()
+                        }
+                        else -> {}
                     }
-                    is Resource.Error -> {
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
-                        viewModel.clearActionState()
-                    }
-                    else -> {}
                 }
             }
         }

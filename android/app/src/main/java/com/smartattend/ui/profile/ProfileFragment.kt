@@ -117,6 +117,10 @@ class ProfileFragment : Fragment() {
         binding.tvPhone.text = user.phone ?: "Not set"
         binding.tvInitial.text = user.name.firstOrNull()?.uppercase() ?: "?"
 
+        if (user.role == "admin" || user.role == "teacher") {
+            binding.cardManagement?.visibility = View.VISIBLE
+        }
+
         if (!user.profilePhoto.isNullOrEmpty()) {
             try {
                 val bytes = Base64.decode(user.profilePhoto.substringAfterLast(","), Base64.DEFAULT)

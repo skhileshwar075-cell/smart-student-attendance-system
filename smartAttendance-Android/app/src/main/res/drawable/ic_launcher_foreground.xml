@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- Extremely clean and bold S-Checkmark logo -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M22,32 L38,16 L82,16 L82,36 L48,70 L22,44 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M18,64 L18,84 L62,84 L78,68 L62,52 L57,57 L68,68 L62,74 L18,74 Z" />
+</vector>

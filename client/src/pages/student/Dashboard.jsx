@@ -83,6 +83,8 @@ export default function StudentDashboard() {
 
   const lowAttendance = data.subjects.filter(s => parseFloat(s.percentage) < 75);
   const pct = data.overallPercentage || 0;
+  const holidayCount = data.holidayCount || 0;
+  const activeClasses = Math.max(data.totalClasses - holidayCount, 0);
   const statusColor = pct >= 75 ? 'text-emerald-600' : pct >= 60 ? 'text-amber-600' : 'text-red-600';
   const statusBg = pct >= 75 ? 'from-emerald-50 to-teal-50 border-emerald-100' : pct >= 60 ? 'from-amber-50 to-yellow-50 border-amber-100' : 'from-red-50 to-rose-50 border-red-100';
 
@@ -97,7 +99,7 @@ export default function StudentDashboard() {
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Overall Attendance</p>
             <p className={`text-3xl font-black ${statusColor}`}>{pct}%</p>
             <p className="text-gray-600 text-sm mt-1">
-              {data.presentCount} present · {data.totalClasses - data.presentCount} absent · {data.totalClasses} total
+              {data.presentCount} present · {activeClasses - data.presentCount} absent · {holidayCount} holiday · {data.totalClasses} total
             </p>
             {pct < 75 && (
               <div className="flex items-center gap-1.5 mt-2 text-red-600 text-xs font-semibold">

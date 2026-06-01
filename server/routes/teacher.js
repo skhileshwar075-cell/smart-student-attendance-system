@@ -1,9 +1,39 @@
 const express = require('express');
+const crypto = require('crypto');
 const { query } = require('../db/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { getLowAttendanceShortlist } = require('../services/attendanceService');
 const { createNotification } = require('../services/notificationService');
 const router = express.Router();
+
+const SESSION_CODE_LENGTH = 6;
+const SESSION_TOKEN_LENGTH_BYTES = 16;
+
+const generateSessionCode = () => {
+  return crypto
+    .randomBytes(SESSION_CODE_LENGTH)
+    .toString('hex')
+    .toUpperCase()
+    .slice(0, SESSION_CODE_LENGTH);
+};
+
+const generateSessionToken = () => {
+  return crypto.randomBytes(SESSION_TOKEN_LENGTH_BYTES).toString('hex');
+};
+
+const getUniqueSessionCode = async (classId) => {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const candidate = generateSessionCode();
+    const existing = await query(
+      `SELECT id FROM attendance_sessions WHERE code=$1 AND class_id=$2 AND session_date=CURRENT_DATE`,
+      [candidate, classId]
+    );
+    if (existing.rows.length === 0) {
+      return candidate;
+    }
+  }
+  throw new Error('Unable to generate a unique session code. Please try again.');
+};
 
 router.use(authenticateToken, requireRole('teacher', 'admin'));
 
@@ -30,6 +60,13 @@ const assertTeacherOwnsSession = async (teacherId, sessionId) => {
   return r.rows.length > 0;
 };
 
+const normalizeDateString = (dateString) => {
+  if (!dateString || typeof dateString !== 'string') return null;
+  const [year, month, day] = dateString.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return `${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+};
+
 router.get('/dashboard', async (req, res) => {
   try {
     const teacherId = await getTeacherId(req.user.id);
@@ -44,10 +81,11 @@ router.get('/dashboard', async (req, res) => {
         ORDER BY sub.name
       `, [teacherId]),
 
-      // Count ONLY unique present students today — absent is derived, not DB-counted
+      // Count ONLY unique present and holiday students today — absent is derived, not DB-counted
       query(`
         SELECT
-          COUNT(DISTINCT CASE WHEN a.status = 'present' THEN a.student_id END) AS present
+          COUNT(DISTINCT CASE WHEN a.status = 'present' THEN a.student_id END) AS present,
+          COUNT(DISTINCT CASE WHEN a.status = 'holiday' THEN a.student_id END) AS holiday
         FROM attendance a
         JOIN subjects sub ON sub.id = a.subject_id
         WHERE sub.teacher_id = $1 AND a.date = CURRENT_DATE
@@ -65,10 +103,10 @@ router.get('/dashboard', async (req, res) => {
     ]);
 
     const presentCount  = parseInt(todayAtt.rows[0]?.present) || 0;
+    const holidayCount  = parseInt(todayAtt.rows[0]?.holiday) || 0;
     const totalEnrolled = parseInt(totalStudents.rows[0]?.total) || 0;
-    // Absent = all enrolled students who are NOT present today
-    // (includes students with no attendance record at all for today)
-    const absentCount   = Math.max(0, totalEnrolled - presentCount);
+    // Absent = all enrolled students who are not present and not holiday today
+    const absentCount   = Math.max(0, totalEnrolled - presentCount - holidayCount);
 
     res.json({
       subjects: subjects.rows,
@@ -345,16 +383,22 @@ router.post('/sessions', async (req, res) => {
     const subRow = await query(`SELECT class_id FROM subjects WHERE id=$1`, [subject_id]);
     const classId = subRow.rows[0]?.class_id || null;
 
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const allowedTypes = ['manual', 'qr', 'code', 'secure'];
+    if (!allowedTypes.includes(type)) {
+      return res.status(400).json({ error: 'Invalid session type. Allowed types are manual, qr, code, secure.' });
+    }
+
+    const code = await getUniqueSessionCode(classId);
+    const sessionToken = type === 'secure' ? generateSessionToken() : null;
     const qrData = `SMARTATTEND:${subject_id}:${code}:${Date.now()}`;
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     const result = await query(
       `INSERT INTO attendance_sessions
-         (subject_id, teacher_id, class_id, session_type, code, qr_data, session_date, geo_lat, geo_lng, geo_radius, expires_at)
-       VALUES ($1,$2,$3,$4,$5,$6,CURRENT_DATE,$7,$8,$9,$10)
-       RETURNING id, code, qr_data, expires_at, session_type, created_at`,
-      [subject_id, teacherId, classId, type, code, qrData,
+         (subject_id, teacher_id, class_id, session_type, code, qr_data, session_token, session_date, geo_lat, geo_lng, geo_radius, expires_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,CURRENT_DATE,$8,$9,$10,$11)
+       RETURNING id, code, qr_data, session_token, expires_at, session_type, created_at`,
+      [subject_id, teacherId, classId, type, code, qrData, sessionToken,
        geo_lat || null, geo_lng || null, geo_radius || 100, expiresAt]
     );
 
@@ -362,6 +406,24 @@ router.post('/sessions', async (req, res) => {
       `INSERT INTO audit_logs (user_id, action, details) VALUES ($1,'create_session',$2)`,
       [req.user.id, JSON.stringify({ subject_id, type, class_id: classId })]
     );
+
+    if (global.io) {
+      const sessionData = {
+        id: result.rows[0].id,
+        subject_id,
+        teacher_id: teacherId,
+        class_id: classId,
+        session_type: type,
+        code,
+        qr_data: qrData,
+        session_token: sessionToken,
+        session_date: new Date().toISOString().split('T')[0],
+        expires_at: result.rows[0].expires_at,
+        is_active: true,
+      };
+      global.io.to(`class_${classId}`).emit('session_created', sessionData);
+      global.io.to('role_student').emit('session_created', sessionData);
+    }
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -400,6 +462,37 @@ router.delete('/sessions/:id', async (req, res) => {
   }
 });
 
+// POST /teacher/sessions/:id/rotate-token — regenerate the secure session token
+router.post('/sessions/:id/rotate-token', async (req, res) => {
+  try {
+    const teacherId = await getTeacherId(req.user.id);
+    const sessionRow = await query(`SELECT id, session_type, is_active FROM attendance_sessions WHERE id=$1`, [req.params.id]);
+    if (sessionRow.rows.length === 0) return res.status(404).json({ error: 'Session not found' });
+    const session = sessionRow.rows[0];
+
+    if (req.user.role !== 'admin' && !(await assertTeacherOwnsSession(teacherId, req.params.id))) {
+      return res.status(403).json({ error: 'Access denied: session does not belong to you' });
+    }
+
+    if (session.session_type !== 'secure') {
+      return res.status(400).json({ error: 'Token rotation is only supported for secure sessions' });
+    }
+
+    if (!session.is_active) {
+      return res.status(400).json({ error: 'Cannot rotate token for an inactive session' });
+    }
+
+    const newToken = generateSessionToken();
+    await query(`UPDATE attendance_sessions SET session_token=$1, updated_at=NOW() WHERE id=$2`, [newToken, req.params.id]);
+    await query(`INSERT INTO audit_logs (user_id, action, details) VALUES ($1,'rotate_session_token',$2)`, [req.user.id, JSON.stringify({ session_id: req.params.id })]);
+
+    res.json({ session_token: newToken });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // ─── MANUAL ATTENDANCE ────────────────────────────────────────────────────────
 router.post('/attendance/manual', async (req, res) => {
   try {
@@ -411,8 +504,9 @@ router.post('/attendance/manual', async (req, res) => {
       return res.status(403).json({ error: 'Access denied: subject not assigned to you' });
     }
 
-    const attendanceDate = date || new Date().toISOString().split('T')[0];
-    const today = new Date().toISOString().split('T')[0];
+    const attendanceDate = normalizeDateString(date || new Date().toISOString().split('T')[0]);
+    if (!attendanceDate) return res.status(400).json({ error: 'Invalid date format' });
+    const today = normalizeDateString(new Date().toISOString().split('T')[0]);
     if (attendanceDate < today) return res.status(403).json({ error: 'Cannot edit past dates' });
 
     let saved = 0;
@@ -434,26 +528,133 @@ router.post('/attendance/manual', async (req, res) => {
   }
 });
 
+router.post('/attendance/holiday', async (req, res) => {
+  try {
+    const teacherId = await getTeacherId(req.user.id);
+    const { subject_id, date } = req.body;
+
+    if (!subject_id || !date) {
+      return res.status(400).json({ error: 'subject_id and date are required' });
+    }
+
+    if (!(await assertTeacherOwnsSubject(teacherId, subject_id))) {
+      return res.status(403).json({ error: 'Access denied: subject not assigned to you' });
+    }
+
+    const attendanceDate = normalizeDateString(date);
+    if (!attendanceDate) return res.status(400).json({ error: 'Invalid date format' });
+    const today = normalizeDateString(new Date().toISOString().split('T')[0]);
+    if (attendanceDate < today) {
+      return res.status(403).json({ error: 'Cannot mark past dates as holiday' });
+    }
+
+    const studentsResult = await query(
+      `SELECT s.id FROM students s JOIN subjects sub ON sub.class_id=s.class_id WHERE sub.id=$1 AND s.is_deleted=false`,
+      [subject_id]
+    );
+
+    if (studentsResult.rows.length === 0) {
+      return res.status(404).json({ error: 'No students found for this subject' });
+    }
+
+    let updated = 0;
+    for (const student of studentsResult.rows) {
+      await query(
+        `INSERT INTO attendance (student_id, subject_id, date, status, method, marked_by)
+         VALUES ($1,$2,$3,'holiday','manual',$4)
+         ON CONFLICT (student_id, subject_id, date) DO UPDATE SET status='holiday', method='manual', updated_at=NOW()`,
+        [student.id, subject_id, attendanceDate, req.user.id]
+      );
+      updated++;
+    }
+
+    await query(`INSERT INTO audit_logs (user_id, action, details) VALUES ($1,'mark_holiday',$2)`, [req.user.id, JSON.stringify({ subject_id, date: attendanceDate, count: updated })]);
+    res.json({ message: `Marked holiday for ${updated} students`, updated });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /teacher/attendance/by-date — fetch existing attendance for a specific subject and date
+router.get('/attendance/by-date', async (req, res) => {
+  try {
+    const teacherId = await getTeacherId(req.user.id);
+    const { subject_id, date } = req.query;
+
+    if (!subject_id || !date) {
+      return res.status(400).json({ error: 'subject_id and date are required' });
+    }
+
+    if (!(await assertTeacherOwnsSubject(teacherId, subject_id))) {
+      return res.status(403).json({ error: 'Access denied: subject not assigned to you' });
+    }
+
+    const attendanceDate = normalizeDateString(date);
+    if (!attendanceDate) return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
+
+    const result = await query(
+      `SELECT a.student_id, a.status, a.method
+       FROM attendance a
+       WHERE a.subject_id=$1 AND a.date=$2`,
+      [subject_id, attendanceDate]
+    );
+
+    res.json({ attendance: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.get('/attendance', async (req, res) => {
   try {
     const teacherId = await getTeacherId(req.user.id);
-    const { subject_id, from, to, student_id } = req.query;
+    const { subject_id, from, to, student_id, search } = req.query;
 
     if (subject_id && !(await assertTeacherOwnsSubject(teacherId, subject_id))) {
       return res.status(403).json({ error: 'Access denied: subject not assigned to you' });
     }
 
+    // pagination params
+    let limit = parseInt(req.query.limit, 10);
+    let offset = parseInt(req.query.offset, 10);
+    if (isNaN(limit) || limit <= 0) limit = 30;
+    if (isNaN(offset) || offset < 0) offset = 0;
+    const MAX_LIMIT = 100;
+    limit = Math.min(limit, MAX_LIMIT);
+
     const params = [teacherId];
-    let sql = `SELECT a.*, u.name as student_name, s.student_id as student_code, sub.name as subject_name
-               FROM attendance a JOIN students s ON s.id=a.student_id JOIN users u ON u.id=s.user_id JOIN subjects sub ON sub.id=a.subject_id
+    let sql = `SELECT a.*, u.name as student_name, s.student_id as student_code, sub.name as subject_name, COUNT(*) OVER() AS total_count
+               FROM attendance a
+               JOIN students s ON s.id=a.student_id
+               JOIN users u ON u.id=s.user_id
+               JOIN subjects sub ON sub.id=a.subject_id
                WHERE sub.teacher_id=$1`;
     if (subject_id) { sql += ` AND a.subject_id=$${params.length+1}`; params.push(subject_id); }
     if (from) { sql += ` AND a.date>=$${params.length+1}`; params.push(from); }
     if (to) { sql += ` AND a.date<=$${params.length+1}`; params.push(to); }
     if (student_id) { sql += ` AND a.student_id=$${params.length+1}`; params.push(student_id); }
-    sql += ' ORDER BY a.date DESC LIMIT 500';
+    if (search) {
+      sql += ` AND (u.name ILIKE $${params.length+1} OR s.student_id ILIKE $${params.length+1})`;
+      params.push(`%${search}%`);
+    }
+    // attach limit/offset params
+    sql += ` ORDER BY a.date DESC LIMIT $${params.length+1} OFFSET $${params.length+2}`;
+    params.push(limit, offset);
+
     const result = await query(sql, params);
-    res.json({ records: result.rows });
+    const rows = result.rows || [];
+    const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
+
+    // remove total_count from each row before sending
+    const records = rows.map(r => {
+      const copy = { ...r };
+      delete copy.total_count;
+      return copy;
+    });
+
+    res.json({ records, total, limit, offset });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

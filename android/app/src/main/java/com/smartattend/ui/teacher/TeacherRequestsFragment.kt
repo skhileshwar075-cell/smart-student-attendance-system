@@ -8,12 +8,15 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.smartattend.databinding.FragmentTeacherRequestsBinding
 import com.smartattend.domain.model.AttendanceRequest
 import com.smartattend.util.Resource
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -45,6 +48,8 @@ class TeacherRequestsFragment : Fragment() {
         binding.chipRejected.setOnClickListener { viewModel.loadRequests("rejected") }
         binding.chipAll.setOnClickListener { viewModel.loadRequests(null) }
 
+        binding.emptyState.btnRetry.setOnClickListener { viewModel.loadRequests(viewModel.currentFilter) }
+
         setupObservers()
     }
 
@@ -66,40 +71,54 @@ class TeacherRequestsFragment : Fragment() {
     }
 
     private fun setupObservers() {
-        lifecycleScope.launch {
-            viewModel.requests.collect { state ->
-                when (state) {
-                    is Resource.Loading -> {
-                        binding.swipeRefresh.isRefreshing = true
-                        binding.tvEmpty.visibility = View.GONE
-                    }
-                    is Resource.Success -> {
-                        binding.swipeRefresh.isRefreshing = false
-                        val list = state.data.requests
-                        adapter.submitList(list)
-                        binding.tvEmpty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
-                        binding.tvRequestCount.text = "${list.size} requests"
-                    }
-                    is Resource.Error -> {
-                        binding.swipeRefresh.isRefreshing = false
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.requests.collectLatest { state ->
+                        when (state) {
+                            is Resource.Loading -> {
+                                binding.swipeRefresh.isRefreshing = true
+                                binding.emptyState.root.visibility = View.GONE
+                            }
+                            is Resource.Success -> {
+                                binding.swipeRefresh.isRefreshing = false
+                                val list = state.data.requests
+                                adapter.submitList(list)
+                                if (list.isEmpty()) {
+                                    binding.emptyState.root.visibility = View.VISIBLE
+                                    binding.emptyState.tvEmptyTitle.text = "No Requests"
+                                    binding.emptyState.tvEmptyMessage.text = "No attendance requests found for this filter."
+                                    binding.emptyState.btnRetry.visibility = View.GONE
+                                } else {
+                                    binding.emptyState.root.visibility = View.GONE
+                                }
+                                binding.tvRequestCount.text = "${list.size} requests"
+                            }
+                            is Resource.Error -> {
+                                binding.swipeRefresh.isRefreshing = false
+                                binding.emptyState.root.visibility = View.VISIBLE
+                                binding.emptyState.tvEmptyTitle.text = "Error Loading Requests"
+                                binding.emptyState.tvEmptyMessage.text = state.message
+                                binding.emptyState.btnRetry.visibility = View.VISIBLE
+                            }
+                        }
                     }
                 }
-            }
-        }
 
-        lifecycleScope.launch {
-            viewModel.reviewState.collect { state ->
-                when (state) {
-                    is Resource.Success -> {
-                        Toast.makeText(requireContext(), "Request updated", Toast.LENGTH_SHORT).show()
-                        viewModel.clearReviewState()
+                launch {
+                    viewModel.reviewState.collectLatest { state ->
+                        when (state) {
+                            is Resource.Success -> {
+                                Toast.makeText(requireContext(), "Request updated", Toast.LENGTH_SHORT).show()
+                                viewModel.clearReviewState()
+                            }
+                            is Resource.Error -> {
+                                Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                                viewModel.clearReviewState()
+                            }
+                            else -> {}
+                        }
                     }
-                    is Resource.Error -> {
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
-                        viewModel.clearReviewState()
-                    }
-                    else -> {}
                 }
             }
         }

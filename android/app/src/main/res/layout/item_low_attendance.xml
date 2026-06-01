@@ -1,41 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:gravity="center_vertical"
-    android:paddingVertical="8dp"
-    android:paddingHorizontal="4dp">
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="1dp">
 
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="12dp">
 
-        <TextView
-            android:id="@+id/tvStudentName"
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvStudentName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/gray_800" />
+
+            <TextView
+                android:id="@+id/tvClass"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="@color/gray_500" />
+
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:textColor="@color/gray_800" />
+            android:orientation="vertical"
+            android:gravity="end">
 
-        <TextView
-            android:id="@+id/tvClass"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="11sp"
-            android:textColor="@color/gray_500" />
+            <TextView
+                android:id="@+id/tvPercentage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAlert"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:text="Alert"
+                android:textSize="10sp"
+                android:paddingHorizontal="8dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:icon="@drawable/ic_notification"
+                app:iconSize="14dp"
+                app:backgroundTint="@color/orange_50"
+                android:textColor="@color/orange_600"
+                app:iconTint="@color/orange_600" />
+
+        </LinearLayout>
 
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/tvPercentage"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="14sp"
-        android:textStyle="bold" />
-
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

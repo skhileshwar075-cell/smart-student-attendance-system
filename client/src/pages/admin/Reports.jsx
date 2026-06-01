@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import * as XLSX from 'xlsx';
 import { Filter, Download, Search, TrendingDown } from 'lucide-react';
 import { InputField } from '../../components/FormFields';
 import { useAuth } from '../../context/AuthContext';
@@ -14,6 +13,10 @@ export default function AdminReports() {
   const [filters, setFilters] = useState({ from: '', to: '', class_id: '', subject_id: '', session: '', semester: '' });
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [limit, setLimit] = useState(50);
+  const [total, setTotal] = useState(0);
+  const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
     axios.get('/api/admin/classes').then(r => setClasses(r.data.classes || []));
@@ -21,23 +24,26 @@ export default function AdminReports() {
     axios.get('/api/admin/academic-sessions').then(r => setSessions(r.data.sessions || []));
   }, []);
 
-  const fetchRecords = async () => {
+  const fetchRecords = async (requestedPage = page) => {
     setLoading(true);
-    const params = {};
+    const params = { limit, offset: requestedPage * limit };
     if (filters.from) params.from = filters.from;
     if (filters.to) params.to = filters.to;
     if (filters.class_id) params.class_id = filters.class_id;
     if (filters.subject_id) params.subject_id = filters.subject_id;
     if (filters.session) params.session = filters.session;
     if (filters.semester) params.semester = filters.semester;
+    if (search) params.search = search;
     const r = await axios.get('/api/admin/reports', { params });
     setRecords(r.data.records || []);
+    setTotal(r.data.pagination?.total || 0);
+    setHasFetched(true);
     setLoading(false);
   };
 
-  const filtered = records.filter(r => !search || r.student_name?.toLowerCase().includes(search.toLowerCase()) || r.student_code?.toLowerCase().includes(search.toLowerCase()));
+  const filtered = records;
 
-  const exportSummaryCSV = () => {
+  const exportSummaryCSV = async () => {
     if (records.length === 0) { alert('No data to export. Generate a report first.'); return; }
     const now = new Date();
     const monthYear = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
@@ -49,8 +55,22 @@ export default function AdminReports() {
     const semester = selectedClass?.semester || '-';
     const generatedBy = user?.name || '-';
 
+    let allRecords = records;
+    if (total > records.length) {
+      const params = { limit: total, offset: 0 };
+      if (filters.from) params.from = filters.from;
+      if (filters.to) params.to = filters.to;
+      if (filters.class_id) params.class_id = filters.class_id;
+      if (filters.subject_id) params.subject_id = filters.subject_id;
+      if (filters.session) params.session = filters.session;
+      if (filters.semester) params.semester = filters.semester;
+      if (search) params.search = search;
+      const response = await axios.get('/api/admin/reports', { params });
+      allRecords = response.data.records || [];
+    }
+
     const studentMap = {};
-    records.forEach(r => {
+    allRecords.forEach(r => {
       const sid = r.student_id;
       if (!studentMap[sid]) {
         studentMap[sid] = { name: r.student_name, roll: r.roll_number || r.student_code, total: 0, present: 0 };
@@ -99,6 +119,7 @@ export default function AdminReports() {
       if (filters.to) params.to = filters.to;
       if (filters.class_id) params.class_id = filters.class_id;
       if (filters.subject_id) params.subject_id = filters.subject_id;
+      if (search) params.search = search;
       const r = await axios.get('/api/admin/reports/pivot', { params });
       const { dates, report: pivot } = r.data;
 
@@ -158,20 +179,21 @@ export default function AdminReports() {
             {[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>Semester {n}</option>)}
           </select>
         </div>
-        <button onClick={fetchRecords} className="btn-primary w-full">Generate Report</button>
+        <button onClick={() => { setPage(0); fetchRecords(0); }} className="btn-primary w-full">Generate Report</button>
       </div>
 
-      {records.length > 0 && (
+      {hasFetched && (
         <div className="attendance-card">
           <div className="flex gap-2 mb-3">
-            <InputField icon={Search} className="flex-1" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." />
+            <InputField icon={Search} className="flex-1" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} placeholder="Search by student name or ID..." />
             <button onClick={exportSummaryCSV} title="Download Summary Report" className="btn-secondary px-2 text-xs flex items-center gap-1"><Download size={14} /> Summary</button>
             <button onClick={exportCSV} title="Download Detailed Report" className="btn-secondary px-2 text-xs flex items-center gap-1"><Download size={14} /> Detailed</button>
           </div>
-          <div className="text-sm text-gray-500 mb-3">Showing {filtered.length} of {records.length} records</div>
+          <div className="text-sm text-gray-500 mb-3">Page {page + 1} • Showing {Math.min(page * limit + 1, total)} - {Math.min(page * limit + records.length, total)} of {total} records</div>
           {loading ? <div className="flex justify-center py-8"><div className="animate-spin w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full" /></div>
+          : records.length === 0 ? <div className="text-center py-8 text-sm text-gray-500">No records found for selected filters.</div>
           : <div className="space-y-2">
-            {filtered.slice(0, 200).map(r => (
+            {records.map(r => (
               <div key={r.id} className="flex items-center justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-800 truncate">{r.student_name}</p>
@@ -182,6 +204,15 @@ export default function AdminReports() {
               </div>
             ))}
           </div>}
+          {total > 0 && (
+            <div className="flex items-center justify-between gap-2 mt-4 text-sm text-gray-600">
+              <div>Page {page + 1} of {Math.ceil(total / limit) || 1}</div>
+              <div className="flex items-center gap-2">
+                <button disabled={page === 0 || loading} onClick={() => { const newPage = Math.max(0, page - 1); setPage(newPage); fetchRecords(newPage); }} className="btn-secondary px-3 py-1 disabled:opacity-50">Previous</button>
+                <button disabled={(page + 1) * limit >= total || loading} onClick={() => { const newPage = page + 1; setPage(newPage); fetchRecords(newPage); }} className="btn-secondary px-3 py-1 disabled:opacity-50">Next</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

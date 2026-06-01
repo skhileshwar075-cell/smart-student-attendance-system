@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import {
   CheckCircle, XCircle, Play, Square, Hash, MapPin,
-  Wifi, Clock, RefreshCw, QrCode, Shield, StopCircle, Eye
+  Wifi, Clock, RefreshCw, QrCode, Shield, StopCircle, Eye, Calendar
 } from 'lucide-react';
 import { useGeolocation } from '../../hooks/useGeolocation';
 
@@ -85,6 +85,8 @@ export default function TakeAttendance() {
   const [msg, setMsg] = useState('');
   const [mode, setMode] = useState('manual');
   const [enableGeo, setEnableGeo] = useState(false);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
+  const [isReadOnly, setIsReadOnly] = useState(false);
   const { location, getLocation, error: locError, loading: locLoading } = useGeolocation();
 
   const [sessions, setSessions] = useState([]);
@@ -92,6 +94,7 @@ export default function TakeAttendance() {
   const [stopping, setStopping] = useState(null);
   const [sessionMsg, setSessionMsg] = useState('');
   const [creatingSession, setCreatingSession] = useState(false);
+  const [rotatingToken, setRotatingToken] = useState(null);
   const [showAllToday, setShowAllToday] = useState(false);
   const [activeSession, setActiveSession] = useState(null);
 
@@ -133,17 +136,67 @@ export default function TakeAttendance() {
       axios.get('/api/teacher/students', { params: { subject_id: selectedSubject } }).then(r => {
         const studs = r.data.students || [];
         setStudents(studs);
-        const rec = {};
-        studs.forEach(s => rec[s.id] = 'present');
-        setRecords(rec);
+        
+        // Fetch existing attendance for the selected date
+        setLoadingAttendance(true);
+        axios.get('/api/teacher/attendance/by-date', { 
+          params: { subject_id: selectedSubject, date: attendanceDate } 
+        }).then(res => {
+          const existingAttendance = res.data.attendance || [];
+          const attendanceMap = {};
+          existingAttendance.forEach(a => {
+            attendanceMap[a.student_id] = a.status;
+          });
+          
+          // Initialize records: use existing attendance if available, otherwise default to 'absent'
+          const rec = {};
+          studs.forEach(s => {
+            rec[s.id] = attendanceMap[s.id] || 'absent';
+          });
+          setRecords(rec);
+        }).catch(() => {
+          // On error, default to all absent
+          const rec = {};
+          studs.forEach(s => rec[s.id] = 'absent');
+          setRecords(rec);
+        }).finally(() => setLoadingAttendance(false));
       });
     }
-  }, [selectedSubject]);
+  }, [selectedSubject, attendanceDate]);
+
+  // Check if selected date is in the past to enable read-only mode
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    setIsReadOnly(attendanceDate < today);
+  }, [attendanceDate]);
+
+  const statusOptions = [
+    { value: 'present', label: 'Present' },
+    { value: 'absent', label: 'Absent' },
+    { value: 'holiday', label: 'Holiday' },
+  ];
 
   const toggleAll = (status) => {
     const rec = {};
     students.forEach(s => rec[s.id] = status);
     setRecords(rec);
+  };
+
+  const markHoliday = async () => {
+    if (!selectedSubject) return;
+    if (!window.confirm('Mark the selected date as holiday for all students in this subject?')) return;
+    setSaving(true); setMsg('');
+    try {
+      await axios.post('/api/teacher/attendance/holiday', { subject_id: selectedSubject, date: attendanceDate });
+      setMsg('Holiday marked successfully. All students are set to holiday for the selected date.');
+      const rec = {};
+      students.forEach(s => rec[s.id] = 'holiday');
+      setRecords(rec);
+    } catch (err) {
+      setMsg(err.response?.data?.error || 'Failed to mark holiday');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const saveAttendance = async () => {
@@ -182,6 +235,25 @@ export default function TakeAttendance() {
     finally { setStopping(null); }
   };
 
+  const rotateSessionToken = async (session) => {
+    if (!window.confirm('Rotate the secure session token? Students will need the new token to mark attendance.')) return;
+    setRotatingToken(session.id);
+    setSessionMsg('');
+    try {
+      const res = await axios.post(`/api/teacher/sessions/${session.id}/rotate-token`);
+      setSessionMsg('Secure session token rotated. Share the new token with your students.');
+      const updatedSessions = sessions.map(s => s.id === session.id ? { ...s, session_token: res.data.session_token } : s);
+      setSessions(updatedSessions);
+      if (activeSession?.id === session.id) {
+        setActiveSession({ ...activeSession, session_token: res.data.session_token });
+      }
+    } catch (err) {
+      setSessionMsg(err.response?.data?.error || 'Failed to rotate session token');
+    } finally {
+      setRotatingToken(null);
+    }
+  };
+
   const today = new Date().toISOString().split('T')[0];
   const isToday = attendanceDate === today;
 
@@ -216,7 +288,7 @@ export default function TakeAttendance() {
         <div>
           <label className="label">Date</label>
           <input type="date" value={attendanceDate} max={today} onChange={e => setAttendanceDate(e.target.value)} className="input-field" />
-          {!isToday && <p className="text-xs text-orange-500 mt-1">⚠ Editing past attendance is restricted</p>}
+          {isReadOnly && <p className="text-xs text-orange-500 mt-1">⚠ View only mode - Past attendance cannot be edited</p>}
         </div>
         <div>
           <label className="label">Attendance Method</label>
@@ -269,7 +341,24 @@ export default function TakeAttendance() {
                 <p className="text-xs text-gray-500 mb-1">Attendance Code</p>
                 <p className="text-4xl font-mono font-bold text-green-700 tracking-widest">{activeSession.code}</p>
                 <p className="text-xs text-gray-400 mt-2">Share with students · Active session running below</p>
-                {mode === 'secure' && <p className="text-xs text-purple-500 mt-1">🔒 Face verification required</p>}
+                {mode === 'secure' && (
+                  <>
+                    <p className="text-xs text-purple-500 mt-1">🔒 Face verification required</p>
+                    {activeSession.session_token && (
+                      <div className="mt-3 rounded-xl bg-white border border-gray-200 p-3 text-left text-xs text-gray-700">
+                        <p className="font-semibold text-xs text-gray-900">Secure Token</p>
+                        <p className="font-mono break-all mt-1 text-sm text-indigo-700">{activeSession.session_token}</p>
+                        <button
+                          onClick={() => rotateSessionToken(activeSession)}
+                          disabled={rotatingToken === activeSession.id}
+                          className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 text-white text-xs px-3 py-2 hover:bg-indigo-700 disabled:opacity-50"
+                        >
+                          {rotatingToken === activeSession.id ? 'Rotating…' : 'Rotate Token'}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
               <p className="text-xs text-center text-gray-400 mb-2">Stop the session from the Active Sessions panel below</p>
             </div>
@@ -346,13 +435,31 @@ export default function TakeAttendance() {
       {/* ── Manual Student List ─────────────────────────────────────────────── */}
       {mode === 'manual' && selectedSubject && (
         <div className="attendance-card">
+          {isReadOnly && (
+            <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2">
+              <div className="text-amber-600 font-bold text-lg">ℹ</div>
+              <div>
+                <p className="text-sm font-medium text-amber-900">View Only - Past Attendance</p>
+                <p className="text-xs text-amber-700 mt-1">You are viewing attendance from a previous date. To edit today's attendance, select today's date.</p>
+              </div>
+            </div>
+          )}
           <div className="flex flex-col gap-2 mb-3 sm:flex-row sm:items-center sm:justify-between">
             <h3 className="font-semibold text-gray-700">Students ({students.length})</h3>
-            <div className="flex gap-2">
-              <button onClick={() => toggleAll('present')} className="text-xs btn-success py-1 px-2">All Present</button>
-              <button onClick={() => toggleAll('absent')} className="text-xs btn-danger py-1 px-2">All Absent</button>
+            <div className="flex gap-2 flex-wrap">
+              <button onClick={() => toggleAll('present')} disabled={isReadOnly} className="text-xs btn-success py-1 px-2 disabled:opacity-50 disabled:cursor-not-allowed">All Present</button>
+              <button onClick={() => toggleAll('absent')} disabled={isReadOnly} className="text-xs btn-danger py-1 px-2 disabled:opacity-50 disabled:cursor-not-allowed">All Absent</button>
+              <button onClick={() => toggleAll('holiday')} disabled={isReadOnly} className="text-xs border border-amber-200 bg-amber-50 text-amber-700 py-1 px-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed">All Holiday</button>
+              <button onClick={markHoliday} disabled={saving || isReadOnly} className="text-xs border border-blue-200 bg-blue-50 text-blue-700 py-1 px-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed">
+                <Calendar size={14} /> Mark Holiday
+              </button>
             </div>
           </div>
+          {loadingAttendance && (
+            <div className="flex justify-center py-4">
+              <div className="animate-spin w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full" />
+            </div>
+          )}
           {students.length === 0 ? (
             <p className="text-gray-400 text-sm text-center py-4">No students in this class</p>
           ) : (
@@ -370,24 +477,29 @@ export default function TakeAttendance() {
                       </div>
                     </div>
                     <div className="flex shrink-0 gap-2">
-                      <button onClick={() => setRecords(p => ({ ...p, [s.id]: 'present' }))}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${records[s.id] === 'present' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'}`}>
+                      <button onClick={() => setRecords(p => ({ ...p, [s.id]: 'present' }))} disabled={isReadOnly}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${records[s.id] === 'present' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'} disabled:opacity-50 disabled:cursor-not-allowed`}>
                         <CheckCircle size={16} />
                       </button>
-                      <button onClick={() => setRecords(p => ({ ...p, [s.id]: 'absent' }))}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${records[s.id] === 'absent' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-400'}`}>
+                      <button onClick={() => setRecords(p => ({ ...p, [s.id]: 'absent' }))} disabled={isReadOnly}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${records[s.id] === 'absent' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-400'} disabled:opacity-50 disabled:cursor-not-allowed`}>
                         <XCircle size={16} />
+                      </button>
+                      <button onClick={() => setRecords(p => ({ ...p, [s.id]: 'holiday' }))} disabled={isReadOnly}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${records[s.id] === 'holiday' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-400'} disabled:opacity-50 disabled:cursor-not-allowed`}>
+                        <Calendar size={16} />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+              <div className="grid grid-cols-3 gap-3 text-xs text-gray-500 mb-3">
                 <span>Present: {Object.values(records).filter(v => v === 'present').length}</span>
                 <span>Absent: {Object.values(records).filter(v => v === 'absent').length}</span>
+                <span>Holiday: {Object.values(records).filter(v => v === 'holiday').length}</span>
               </div>
-              <button onClick={saveAttendance} disabled={saving || !isToday} className="btn-primary w-full">
-                {saving ? 'Saving...' : !isToday ? "Can only save today's attendance" : 'Save Attendance'}
+              <button onClick={saveAttendance} disabled={saving || isReadOnly} className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed">
+                {saving ? 'Saving...' : isReadOnly ? 'Cannot edit past attendance' : 'Save Attendance'}
               </button>
             </>
           )}

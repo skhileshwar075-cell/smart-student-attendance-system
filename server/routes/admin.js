@@ -4,6 +4,7 @@ const { query, withTransaction } = require('../db/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { getLowAttendanceShortlist, getClassWiseAnalytics, getSubjectWiseAnalytics, getStudentAnalysis } = require('../services/attendanceService');
 const { createNotification } = require('../services/notificationService');
+const { getAppSetting, setAppSetting } = require('../services/faceVerificationService');
 const router = express.Router();
 
 router.use(authenticateToken, requireRole('admin'));
@@ -15,11 +16,12 @@ router.get('/stats', async (req, res) => {
       query('SELECT COUNT(*) as count FROM teachers'),
       query('SELECT COUNT(*) as count FROM classes'),
       query('SELECT COUNT(*) as count FROM subjects'),
-      // Only count DISTINCT present students — absent is derived, not DB-counted
+      // Only count DISTINCT present and holiday students — absent is derived, not DB-counted
       // This ensures students with no record today are correctly counted as absent
       query(`
         SELECT
-          COUNT(DISTINCT CASE WHEN status = 'present' THEN student_id END) AS present_today
+          COUNT(DISTINCT CASE WHEN status = 'present' THEN student_id END) AS present_today,
+          COUNT(DISTINCT CASE WHEN status = 'holiday' THEN student_id END) AS holiday_today
         FROM attendance
         WHERE date = CURRENT_DATE
       `),
@@ -27,9 +29,9 @@ router.get('/stats', async (req, res) => {
 
     const totalStudentsCount = parseInt(students.rows[0].count);
     const presentToday       = parseInt(todayAtt.rows[0]?.present_today) || 0;
-    // Absent = all active students who are not present today
-    // (covers students with no attendance record for today as well)
-    const absentToday        = Math.max(0, totalStudentsCount - presentToday);
+    const holidayToday       = parseInt(todayAtt.rows[0]?.holiday_today) || 0;
+    // Absent = all active students who are not present and not holiday today
+    const absentToday        = Math.max(0, totalStudentsCount - presentToday - holidayToday);
 
     res.json({
       totalStudents: totalStudentsCount,
@@ -39,6 +41,45 @@ router.get('/stats', async (req, res) => {
       presentToday,
       absentToday,
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.get('/face/registrations', async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT s.id as student_id, u.id as user_id, u.name, u.email, s.student_id as student_code,
+              u.face_registered_at, u.face_encoding IS NOT NULL AS face_registered
+         FROM students s
+         JOIN users u ON u.id = s.user_id
+        ORDER BY u.name`);
+    res.json({ registrations: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.get('/face/settings', async (req, res) => {
+  try {
+    const required = await getAppSetting('face_registration_required', 'false');
+    res.json({ faceRegistrationRequired: required === 'true' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.put('/face/settings', async (req, res) => {
+  try {
+    const { faceRegistrationRequired } = req.body;
+    if (faceRegistrationRequired === undefined) {
+      return res.status(400).json({ error: 'faceRegistrationRequired is required' });
+    }
+    await setAppSetting('face_registration_required', faceRegistrationRequired ? 'true' : 'false');
+    res.json({ faceRegistrationRequired: Boolean(faceRegistrationRequired) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -287,7 +328,7 @@ router.delete('/subjects/:id', async (req, res) => {
 // ─── REPORTS ─────────────────────────────────────────────────────────────────
 router.get('/reports', async (req, res) => {
   try {
-    const { from, to, class_id, subject_id, student_id, status, semester, session } = req.query;
+    const { from, to, class_id, subject_id, student_id, status, semester, session, search, limit = 50, offset = 0 } = req.query;
     const params = [];
     let sql = `SELECT a.*, u.name as student_name, s.student_id as student_code,
                 sub.name as subject_name, sub.code as subject_code,
@@ -308,9 +349,42 @@ router.get('/reports', async (req, res) => {
     if (class_id) { sql += ` AND sub.class_id = $${params.length+1}`; params.push(class_id); }
     if (semester) { sql += ` AND a.semester = $${params.length+1}`; params.push(parseInt(semester)); }
     if (session) { sql += ` AND a.session = $${params.length+1}`; params.push(session); }
-    sql += ' ORDER BY a.date DESC LIMIT 500';
+    if (search) { sql += ` AND (u.name ILIKE $${params.length+1} OR s.student_id ILIKE $${params.length+1})`; params.push(`%${search}%`); }
+    sql += ' ORDER BY a.date DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2);
+    params.push(parseInt(limit), parseInt(offset));
+
     const result = await query(sql, params);
-    res.json({ records: result.rows });
+
+    // Get total count for pagination metadata
+    let countSql = `SELECT COUNT(*) as total FROM attendance a
+                    JOIN students s ON s.id = a.student_id
+                    JOIN users u ON u.id = s.user_id
+                    JOIN subjects sub ON sub.id = a.subject_id
+                    LEFT JOIN classes c ON c.id = sub.class_id
+                    WHERE 1=1`;
+    const countParams = [];
+    if (from) { countSql += ` AND a.date >= $${countParams.length+1}`; countParams.push(from); }
+    if (to) { countSql += ` AND a.date <= $${countParams.length+1}`; countParams.push(to); }
+    if (subject_id) { countSql += ` AND a.subject_id = $${countParams.length+1}`; countParams.push(subject_id); }
+    if (student_id) { countSql += ` AND a.student_id = $${countParams.length+1}`; countParams.push(student_id); }
+    if (status) { countSql += ` AND a.status = $${countParams.length+1}`; countParams.push(status); }
+    if (class_id) { countSql += ` AND sub.class_id = $${countParams.length+1}`; countParams.push(class_id); }
+    if (semester) { countSql += ` AND a.semester = $${countParams.length+1}`; countParams.push(parseInt(semester)); }
+    if (session) { countSql += ` AND a.session = $${countParams.length+1}`; countParams.push(session); }
+    if (search) { countSql += ` AND (u.name ILIKE $${countParams.length+1} OR s.student_id ILIKE $${countParams.length+1})`; countParams.push(`%${search}%`); }
+
+    const countResult = await query(countSql, countParams);
+    const total = parseInt(countResult.rows[0].total);
+
+    res.json({
+      records: result.rows,
+      pagination: {
+        total,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        hasMore: offset + parseInt(limit) < total
+      }
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -319,7 +393,7 @@ router.get('/reports', async (req, res) => {
 
 router.get('/reports/pivot', async (req, res) => {
   try {
-    const { from, to, class_id, subject_id } = req.query;
+    const { from, to, class_id, subject_id, search } = req.query;
     const params = [];
     let sql = `SELECT s.id as student_id, u.name, s.student_id as student_code, s.roll_number,
                 a.date, a.status
@@ -332,6 +406,7 @@ router.get('/reports/pivot', async (req, res) => {
     if (to)         { sql += ` AND a.date <= $${params.length+1}`; params.push(to); }
     if (subject_id) { sql += ` AND a.subject_id = $${params.length+1}`; params.push(subject_id); }
     if (class_id)   { sql += ` AND sub.class_id = $${params.length+1}`; params.push(class_id); }
+    if (search)     { sql += ` AND (u.name ILIKE $${params.length+1} OR s.student_id ILIKE $${params.length+1})`; params.push(`%${search}%`); }
     sql += ' ORDER BY s.roll_number, u.name, a.date ASC';
     const result = await query(sql, params);
     const rows = result.rows;

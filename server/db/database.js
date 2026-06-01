@@ -2,7 +2,11 @@ const { Pool } = require('pg');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false },
+  ssl:
+    process.env.DATABASE_URL?.includes('localhost') ||
+    process.env.DATABASE_URL?.includes('127.0.0.1')
+      ? false
+      : { rejectUnauthorized: false },
 });
 
 async function query(text, params) {
@@ -16,23 +20,9 @@ async function query(text, params) {
 }
 
 async function initDB() {
-  // Drop old tables from previous schema versions if they exist with wrong structure
-  await query(`
-    DROP TABLE IF EXISTS anomaly_logs CASCADE;
-    DROP TABLE IF EXISTS audit_logs CASCADE;
-    DROP TABLE IF EXISTS notifications CASCADE;
-    DROP TABLE IF EXISTS attendance_requests CASCADE;
-    DROP TABLE IF EXISTS attendance CASCADE;
-    DROP TABLE IF EXISTS attendance_sessions CASCADE;
-    DROP TABLE IF EXISTS subjects CASCADE;
-    DROP TABLE IF EXISTS students CASCADE;
-    DROP TABLE IF EXISTS teachers CASCADE;
-    DROP TABLE IF EXISTS classes CASCADE;
-    DROP TABLE IF EXISTS branches CASCADE;
-    DROP TABLE IF EXISTS users CASCADE;
-  `);
-
-  await query(`
+  try {
+    // Create tables if they don't exist (safe for production)
+    await query(`
     CREATE TABLE IF NOT EXISTS users (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       name VARCHAR(100) NOT NULL,
@@ -43,7 +33,7 @@ async function initDB() {
       is_active BOOLEAN DEFAULT true,
       fcm_token VARCHAR(255),
       face_encoding TEXT,
-      profile_photo VARCHAR(255),
+      profile_photo TEXT,
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW()
     );
@@ -108,6 +98,7 @@ async function initDB() {
       session_type VARCHAR(20) NOT NULL CHECK (session_type IN ('manual','qr','code','secure')),
       code VARCHAR(20),
       qr_data TEXT,
+      session_token VARCHAR(64) UNIQUE,
       session_date DATE NOT NULL,
       geo_lat DECIMAL(10,7),
       geo_lng DECIMAL(10,7),
@@ -117,13 +108,15 @@ async function initDB() {
       created_at TIMESTAMP DEFAULT NOW()
     );
 
+    ALTER TABLE attendance_sessions ADD COLUMN IF NOT EXISTS session_token VARCHAR(64);
+
     CREATE TABLE IF NOT EXISTS attendance (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       student_id UUID REFERENCES students(id) ON DELETE CASCADE,
       subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
       session_id UUID REFERENCES attendance_sessions(id) ON DELETE SET NULL,
       date DATE NOT NULL,
-      status VARCHAR(20) NOT NULL CHECK (status IN ('present','absent','late','excused')),
+      status VARCHAR(20) NOT NULL CHECK (status IN ('present','absent','late','excused','holiday')),
       method VARCHAR(20) DEFAULT 'manual',
       semester INTEGER,
       session VARCHAR(20),
@@ -170,6 +163,27 @@ async function initDB() {
       created_at TIMESTAMP DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key VARCHAR(100) PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS face_verification_logs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+      student_id UUID REFERENCES students(id) ON DELETE SET NULL,
+      session_id UUID REFERENCES attendance_sessions(id) ON DELETE SET NULL,
+      session_token VARCHAR(64),
+      method VARCHAR(50) DEFAULT 'face_verification',
+      success BOOLEAN DEFAULT false,
+      confidence DECIMAL(5,4) DEFAULT 0,
+      details JSONB,
+      ip_address VARCHAR(50),
+      user_agent TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+
     CREATE TABLE IF NOT EXISTS anomaly_logs (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       student_id UUID REFERENCES students(id) ON DELETE CASCADE,
@@ -201,9 +215,56 @@ async function initDB() {
       attempts INTEGER DEFAULT 0,
       created_at TIMESTAMP DEFAULT NOW()
     );
+
+    -- Ensure the attendance status check constraint allows all current statuses, including holiday.
+    ALTER TABLE attendance DROP CONSTRAINT IF EXISTS attendance_status_check;
+    ALTER TABLE attendance ADD CONSTRAINT attendance_status_check CHECK (status IN ('present','absent','late','excused','holiday'));
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS face_registered_at TIMESTAMP;
+    ALTER TABLE attendance_attempts ADD COLUMN IF NOT EXISTS face_match BOOLEAN DEFAULT false;
+    ALTER TABLE attendance_attempts ADD COLUMN IF NOT EXISTS face_confidence DECIMAL(5,4);
+
+    -- Add indexes to support attendance list queries and teacher/student search.
+    CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(date);
+    CREATE INDEX IF NOT EXISTS idx_attendance_subject_date ON attendance(subject_id, date);
+    CREATE INDEX IF NOT EXISTS idx_attendance_student_date ON attendance(student_id, date);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_attendance_sessions_code_class_date ON attendance_sessions(code, class_id, session_date);
+    CREATE TABLE IF NOT EXISTS attendance_attempts (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+      student_id UUID REFERENCES students(id) ON DELETE SET NULL,
+      session_id UUID REFERENCES attendance_sessions(id) ON DELETE SET NULL,
+      session_code VARCHAR(20),
+      session_token VARCHAR(64),
+      status VARCHAR(20) NOT NULL CHECK (status IN ('pending','success','failed')),
+      error_code VARCHAR(100),
+      anomaly_info JSONB,
+      ip_address VARCHAR(50),
+      user_agent TEXT,
+      geo_lat DECIMAL(10,7),
+      geo_lng DECIMAL(10,7),
+      face_payload BOOLEAN DEFAULT false,
+      face_match BOOLEAN DEFAULT false,
+      face_confidence DECIMAL(5,4),
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_attendance_attempts_student ON attendance_attempts(student_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_attendance_attempts_session ON attendance_attempts(session_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_attendance_attempts_status ON attendance_attempts(status);
+    CREATE INDEX IF NOT EXISTS idx_students_class_id ON students(class_id);
+    CREATE INDEX IF NOT EXISTS idx_students_student_id ON students(student_id);
+    CREATE INDEX IF NOT EXISTS idx_users_name ON users(name);
+    CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications(user_id, created_at DESC);
   `);
 
-  console.log('Database schema ready');
+    await query(`INSERT INTO app_settings (key, value, updated_at)
+                 VALUES ('face_registration_required','false', NOW())
+                 ON CONFLICT (key) DO NOTHING`);
+
+    console.log('Database schema ready');
+  } catch (error) {
+    console.error('Database initialization failed:', error);
+    throw error;
+  }
 }
 
 async function withTransaction(fn) {

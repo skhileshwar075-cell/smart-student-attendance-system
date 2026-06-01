@@ -1,7 +1,7 @@
 {
   "name": "smartattend-server",
-  "version": "1.0.0",
-  "description": "SmartAttend Backend API",
+  "version": "3.1.0",
+  "description": "SmartAttend Backend API with holiday support and responsive design",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

@@ -145,7 +145,7 @@ data class SessionsResponse(val sessions: List<AttendanceSession>)
 
 data class CreateSessionRequest(
     @SerializedName("subject_id") val subjectId: String,
-    val type: String,
+    @SerializedName("session_type") val type: String,
     @SerializedName("geo_lat") val geoLat: Double?,
     @SerializedName("geo_lng") val geoLng: Double?,
     @SerializedName("geo_radius") val geoRadius: Int?
@@ -326,24 +326,24 @@ data class NotificationsResponse(val notifications: List<Notification>)
 // ─── DASHBOARDS ───────────────────────────────────────────────────────────────
 
 data class StudentDashboard(
-    val subjects: List<Subject>,
-    @SerializedName("total_classes") val totalClasses: Int,
-    @SerializedName("present_count") val presentCount: Int,
-    @SerializedName("overall_percentage") val overallPercentage: Int,
-    @SerializedName("recent_attendance") val recentAttendance: List<RecentAttendance>,
-    val notifications: List<Notification>
+    val subjects: List<Subject>?,
+    @SerializedName("total_classes") val totalClasses: Int?,
+    @SerializedName("present_count") val presentCount: Int?,
+    @SerializedName("overall_percentage") val overallPercentage: Int?,
+    @SerializedName("recent_attendance") val recentAttendance: List<RecentAttendance>?,
+    val notifications: List<Notification>?
 )
 
 data class RecentAttendance(
-    val date: String,
-    val status: String,
+    val date: String?,
+    val status: String?,
     @SerializedName("subject_name") val subjectName: String?
 )
 
 data class TeacherDashboard(
-    val subjects: List<Subject>,
-    @SerializedName("today_stats") val todayStats: TodayStats,
-    @SerializedName("pending_requests") val pendingRequests: Int
+    val subjects: List<Subject>?,
+    @SerializedName("today_stats") val todayStats: TodayStats?,
+    @SerializedName("pending_requests") val pendingRequests: Int?
 )
 
 data class TodayStats(val present: Int, val absent: Int, val total: Int)
@@ -386,14 +386,15 @@ data class PivotReportRow(
 data class PivotReportResponse(val dates: List<String>, val report: List<PivotReportRow>)
 
 data class AnalyticsResponse(
-    val trend: List<TrendPoint>,
-    @SerializedName("low_attendance") val lowAttendance: List<LowAttendanceStudent>,
-    @SerializedName("subject_stats") val subjectStats: List<SubjectStat>,
-    @SerializedName("anomaly_count") val anomalyCount: Int
+    val trend: List<TrendPoint>?,
+    @SerializedName("low_attendance") val lowAttendance: List<LowAttendanceStudent>?,
+    @SerializedName("subject_stats") val subjectStats: List<SubjectStat>?,
+    @SerializedName("anomaly_count") val anomalyCount: Int?
 )
 
 data class TrendPoint(val date: String, val present: Int, val absent: Int, val late: Int?)
 data class LowAttendanceStudent(
+    val id: String?, // Added for alert sending
     val name: String,
     @SerializedName("student_code") val studentCode: String?,
     @SerializedName("class_name") val className: String?,
@@ -467,8 +468,9 @@ data class MessageResponse(val message: String)
 data class CreateResponse(val id: String, val message: String)
 data class AlertRequest(
     @SerializedName("student_id") val studentId: String,
-    val message: String?,
-    @SerializedName("subject_id") val subjectId: String?
+    val message: String? = null,
+    @SerializedName("subject_id") val subjectId: String? = null,
+    @SerializedName("attendance_pct") val attendancePct: Double? = null
 )
 
 data class TeacherCreateStudentRequest(

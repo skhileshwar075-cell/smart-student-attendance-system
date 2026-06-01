@@ -239,6 +239,24 @@ interface ApiService {
         @Query("session") session: String? = null
     ): Response<AttendanceListResponse>
 
+    @GET("admin/reports/pivot")
+    suspend fun getAdminPivotReport(
+        @Query("from") from: String? = null,
+        @Query("to") to: String? = null,
+        @Query("class_id") classId: String? = null,
+        @Query("subject_id") subjectId: String? = null
+    ): Response<PivotReportResponse>
+
+    @GET("admin/attendance/low-shortlist")
+    suspend fun getAdminLowAttendanceShortlist(
+        @Query("class_id") classId: String? = null,
+        @Query("subject_id") subjectId: String? = null,
+        @Query("from") from: String? = null,
+        @Query("to") to: String? = null,
+        @Query("threshold") threshold: Int? = null,
+        @Query("search") search: String? = null
+    ): Response<LowAttendanceResponse>
+
     @GET("admin/analytics")
     suspend fun getAnalytics(
         @Query("from") from: String? = null,

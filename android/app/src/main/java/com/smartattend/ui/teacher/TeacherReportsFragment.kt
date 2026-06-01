@@ -13,11 +13,14 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.smartattend.data.local.PreferenceManager
 import com.smartattend.databinding.FragmentTeacherReportsBinding
 import com.smartattend.domain.model.Subject
 import com.smartattend.util.Resource
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
@@ -80,48 +83,68 @@ class TeacherReportsFragment : Fragment() {
             downloadShortlist()
         }
 
+        binding.layoutEmpty.btnRetry.setOnClickListener {
+            viewModel.loadReport(selectedSubjectId)
+        }
+
         viewModel.loadSubjects()
         setupObservers()
     }
 
     private fun setupObservers() {
-        lifecycleScope.launch {
-            viewModel.subjects.collect { state ->
-                if (state is Resource.Success) {
-                    subjects = state.data.subjects
-                    val names = mutableListOf("All Subjects") + subjects.map { "${it.name} (${it.code})" }
-                    val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, names)
-                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                    binding.spinnerSubject.adapter = adapter
-                    binding.spinnerSubject.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                        override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
-                            selectedSubjectId = if (pos == 0) null else subjects.getOrNull(pos - 1)?.id
-                            selectedSubject = if (pos == 0) null else subjects.getOrNull(pos - 1)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.subjects.collectLatest { state ->
+                    if (state is Resource.Success) {
+                        subjects = state.data.subjects
+                        val names = mutableListOf("All Subjects") + subjects.map { "${it.name} (${it.code})" }
+                        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, names)
+                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                        binding.spinnerSubject.adapter = adapter
+                        binding.spinnerSubject.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                            override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
+                                selectedSubjectId = if (pos == 0) null else subjects.getOrNull(pos - 1)?.id
+                                selectedSubject = if (pos == 0) null else subjects.getOrNull(pos - 1)
+                            }
+                            override fun onNothingSelected(parent: AdapterView<*>?) {}
                         }
-                        override fun onNothingSelected(parent: AdapterView<*>?) {}
                     }
                 }
             }
         }
 
-        lifecycleScope.launch {
-            viewModel.report.collect { state ->
-                when (state) {
-                    null -> { binding.swipeRefresh.isRefreshing = false }
-                    is Resource.Loading -> {
-                        binding.swipeRefresh.isRefreshing = true
-                        binding.tvEmpty.visibility = View.GONE
-                    }
-                    is Resource.Success -> {
-                        binding.swipeRefresh.isRefreshing = false
-                        val rows = state.data.report
-                        reportsAdapter.submitList(rows)
-                        binding.tvEmpty.visibility = if (rows.isEmpty()) View.VISIBLE else View.GONE
-                        binding.tvRowCount.text = "${rows.size} students"
-                    }
-                    is Resource.Error -> {
-                        binding.swipeRefresh.isRefreshing = false
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.report.collectLatest { state ->
+                    when (state) {
+                        null -> { binding.swipeRefresh.isRefreshing = false }
+                        is Resource.Loading -> {
+                            binding.swipeRefresh.isRefreshing = true
+                            binding.layoutEmpty.root.visibility = View.GONE
+                        }
+                        is Resource.Success -> {
+                            binding.swipeRefresh.isRefreshing = false
+                            val rows = state.data.report
+                            reportsAdapter.submitList(rows)
+                            
+                            val isEmpty = rows.isEmpty()
+                            binding.layoutEmpty.root.visibility = if (isEmpty) View.VISIBLE else View.GONE
+                            if (isEmpty) {
+                                binding.layoutEmpty.tvEmptyTitle.text = "No Reports Found"
+                                binding.layoutEmpty.tvEmptyMessage.text = "Select a subject and tap Load Report"
+                                binding.layoutEmpty.btnRetry.visibility = View.VISIBLE
+                                binding.layoutEmpty.btnRetry.setOnClickListener { viewModel.loadReport(selectedSubjectId) }
+                            }
+                            binding.tvRowCount.text = "${rows.size} students"
+                        }
+                        is Resource.Error -> {
+                            binding.swipeRefresh.isRefreshing = false
+                            binding.layoutEmpty.root.visibility = View.VISIBLE
+                            binding.layoutEmpty.tvEmptyTitle.text = "Error Loading Report"
+                            binding.layoutEmpty.tvEmptyMessage.text = state.message
+                            binding.layoutEmpty.btnRetry.visibility = View.VISIBLE
+                            binding.layoutEmpty.btnRetry.setOnClickListener { viewModel.loadReport(selectedSubjectId) }
+                        }
                     }
                 }
             }

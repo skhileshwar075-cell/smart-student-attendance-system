@@ -36,27 +36,22 @@
                 app:queryHint="Search students..."
                 app:searchIcon="@android:drawable/ic_menu_search" />
 
+            <TextView
+                android:id="@+id/tvCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/gray_500"
+                android:textSize="12sp" />
+
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvEmpty"
+        <include
+            android:id="@+id/layoutEmpty"
+            layout="@layout/layout_empty_state"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="No students found. Tap + to add one."
-            android:gravity="center"
-            android:padding="40dp"
-            android:textColor="@color/gray_400"
-            android:textSize="14sp"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/tvError"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@color/red_600"
-            android:padding="12dp"
-            android:visibility="gone"
-            android:background="@color/red_50" />
+            android:layout_marginTop="64dp" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvStudents"

@@ -39,12 +39,13 @@ class TeacherRequestsAdapter(
         holder.tvStatus.text = item.status.replaceFirstChar { it.uppercase() }
 
         val (bgColor, textColor) = when (item.status.lowercase()) {
-            "approved" -> "#DCFCE7" to "#166534"
-            "rejected" -> "#FEE2E2" to "#991B1B"
-            else       -> "#FEF3C7" to "#92400E"
+            "approved" -> R.color.present_bg to R.color.present_text
+            "rejected" -> R.color.absent_bg to R.color.absent_text
+            else       -> R.color.pending_bg to R.color.pending_text
         }
-        holder.tvStatus.setBackgroundColor(Color.parseColor(bgColor))
-        holder.tvStatus.setTextColor(Color.parseColor(textColor))
+        val ctx = holder.itemView.context
+        holder.tvStatus.setBackgroundResource(bgColor)
+        holder.tvStatus.setTextColor(androidx.core.content.ContextCompat.getColor(ctx, textColor))
 
         val isPending = item.status.lowercase() == "pending"
         holder.btnApprove.visibility = if (isPending) View.VISIBLE else View.GONE

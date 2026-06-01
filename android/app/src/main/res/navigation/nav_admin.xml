@@ -35,6 +35,26 @@
         android:label="Analytics" />
 
     <fragment
+        android:id="@+id/adminReportsFragment"
+        android:name="com.smartattend.ui.admin.AdminReportsFragment"
+        android:label="Reports" />
+
+    <fragment
+        android:id="@+id/adminPivotReportsFragment"
+        android:name="com.smartattend.ui.admin.AdminPivotReportsFragment"
+        android:label="Pivot Reports" />
+
+    <fragment
+        android:id="@+id/adminLowAttendanceFragment"
+        android:name="com.smartattend.ui.admin.AdminLowAttendanceFragment"
+        android:label="Low Attendance" />
+
+    <fragment
+        android:id="@+id/adminNotificationsFragment"
+        android:name="com.smartattend.ui.admin.AdminNotificationsFragment"
+        android:label="Notifications" />
+
+    <fragment
         android:id="@+id/adminAuditLogsFragment"
         android:name="com.smartattend.ui.admin.AdminAuditLogsFragment"
         android:label="Audit Logs" />

@@ -46,20 +46,13 @@
         android:visibility="gone"
         tools:visibility="visible" />
 
-    <!-- Empty state -->
-    <TextView
-        android:id="@+id/tvEmpty"
+    <!-- Empty/Error state -->
+    <include
+        android:id="@+id/emptyState"
+        layout="@layout/layout_empty_state"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="64dp"
-        android:gravity="center"
-        android:padding="24dp"
-        android:lineSpacingExtra="6dp"
-        android:text="No active sessions right now."
-        android:textColor="#888888"
-        android:textSize="15sp"
-        android:visibility="gone"
-        tools:visibility="visible" />
+        android:layout_marginTop="32dp" />
 
     <!-- SwipeRefresh wrapping RecyclerView -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout

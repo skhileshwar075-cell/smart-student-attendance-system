@@ -262,6 +262,48 @@
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
+                <!-- Management Card (More Options) -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardManagement"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:id="@+id/layoutManagementLinks"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Management"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="#374151"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="8dp"/>
+
+                        <!-- Links will be added programmatically or via specific buttons -->
+                        <GridLayout
+                            android:id="@+id/gridManagement"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:columnCount="2"
+                            android:alignmentMode="alignMargins"
+                            android:rowOrderPreserved="false">
+                            <!-- Items added in code -->
+                        </GridLayout>
+
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

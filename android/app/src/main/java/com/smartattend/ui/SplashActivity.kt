@@ -41,38 +41,22 @@ class SplashActivity : AppCompatActivity() {
     }
 
     private fun animateElements() {
-        binding.cardLogo.alpha = 0f
-        binding.cardLogo.scaleX = 0.6f
-        binding.cardLogo.scaleY = 0.6f
+        // Ensure elements are visible by default to prevent black screen if animations are blocked
+        binding.cardLogo.alpha = 1f
+        binding.cardLogo.scaleX = 1f
+        binding.cardLogo.scaleY = 1f
+        
+        binding.tvAppName.alpha = 1f
+        binding.tvTagline.alpha = 1f
+        binding.progressSplash.alpha = 1f
+
+        // Run animations as an enhancement
         binding.cardLogo.animate()
-            .alpha(1f)
-            .scaleX(1f)
-            .scaleY(1f)
-            .setDuration(600)
-            .setStartDelay(100)
-            .start()
-
-        binding.tvAppName.alpha = 0f
-        binding.tvAppName.translationY = 30f
-        binding.tvAppName.animate()
-            .alpha(1f)
-            .translationY(0f)
-            .setDuration(500)
-            .setStartDelay(400)
-            .start()
-
-        binding.tvTagline.alpha = 0f
-        binding.tvTagline.animate()
-            .alpha(1f)
-            .setDuration(400)
-            .setStartDelay(700)
-            .start()
-
-        binding.progressSplash.alpha = 0f
-        binding.progressSplash.animate()
-            .alpha(1f)
-            .setDuration(300)
-            .setStartDelay(900)
+            .scaleX(1.1f).scaleY(1.1f)
+            .setDuration(1000)
+            .withEndAction {
+                binding.cardLogo.animate().scaleX(1f).scaleY(1f).setDuration(1000).start()
+            }
             .start()
     }
 

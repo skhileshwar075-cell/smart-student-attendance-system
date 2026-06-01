@@ -1,62 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/swipeRefresh"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <LinearLayout
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:background="@color/background">
+        android:layout_height="match_parent">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:padding="16dp"
-            android:background="@color/surface">
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="@color/background">
 
-            <TextView
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp"
+                android:background="@color/surface">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Manage Classes"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/gray_900" />
+
+                <TextView
+                    android:id="@+id/tvCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+
+            <include
+                android:id="@+id/layoutEmpty"
+                layout="@layout/layout_empty_state"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvClasses"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
                 android:layout_weight="1"
-                android:text="Manage Classes"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="@color/gray_900" />
-
-            <TextView
-                android:id="@+id/tvCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/gray_500"
-                android:textSize="12sp" />
+                android:padding="8dp"
+                android:clipToPadding="false" />
 
         </LinearLayout>
 
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-        <TextView
-            android:id="@+id/tvEmpty"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="No classes found"
-            android:gravity="center"
-            android:padding="40dp"
-            android:textColor="@color/gray_400"
-            android:visibility="gone" />
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddClass"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:contentDescription="Add Class"
+        android:src="@drawable/ic_graduation_cap"
+        app:tint="@android:color/white"
+        app:backgroundTint="@color/brand_primary" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvClasses"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:padding="8dp"
-            android:clipToPadding="false" />
-
-    </LinearLayout>
-
-</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

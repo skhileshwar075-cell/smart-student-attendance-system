@@ -16,8 +16,8 @@ class AuthRepository @Inject constructor(
     suspend fun login(email: String, password: String): Resource<LoginResponse> {
         return try {
             val response = api.login(LoginRequest(email, password))
-            if (response.isSuccessful && response.body() != null) {
-                val body = response.body()!!
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
                 prefs.saveSession(body.token, body.user.id, body.user.name, body.user.email, body.user.role, body.user.profileId, body.user.classId)
                 Resource.Success(body)
             } else {
@@ -32,8 +32,9 @@ class AuthRepository @Inject constructor(
     suspend fun getMe(): Resource<User> {
         return try {
             val response = api.getMe()
-            if (response.isSuccessful) Resource.Success(response.body()!!)
-            else Resource.Error("Failed to fetch user")
+            val body = response.body()
+            if (response.isSuccessful && body != null) Resource.Success(body)
+            else Resource.Error("Failed to fetch user: ${response.message()}")
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Network error")
         }
@@ -48,7 +49,11 @@ class AuthRepository @Inject constructor(
     suspend fun logout() = prefs.clearSession()
 
     suspend fun register(name: String, email: String, password: String, role: String): retrofit2.Response<MessageResponse> {
-        return api.register(RegisterRequest(name, email, password, role))
+        return try {
+            api.register(RegisterRequest(name, email, password, role))
+        } catch (e: Exception) {
+            retrofit2.Response.error(500, okhttp3.ResponseBody.create(null, "Network failure"))
+        }
     }
 
     suspend fun forgotPassword(email: String): retrofit2.Response<MessageResponse> {
@@ -58,7 +63,8 @@ class AuthRepository @Inject constructor(
     suspend fun verifyOtp(email: String, otpCode: String): Resource<VerifyOtpResponse> {
         return try {
             val response = api.verifyOtp(VerifyOtpRequest(email, otpCode))
-            if (response.isSuccessful && response.body() != null) Resource.Success(response.body()!!)
+            val body = response.body()
+            if (response.isSuccessful && body != null) Resource.Success(body)
             else Resource.Error(extractError(response.errorBody()?.string() ?: "Invalid OTP"))
         } catch (e: Exception) { Resource.Error(e.message ?: "Network error") }
     }

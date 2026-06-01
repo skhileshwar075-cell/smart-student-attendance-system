@@ -14,6 +14,8 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.gms.location.*
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.*
@@ -22,6 +24,7 @@ import com.journeyapps.barcodescanner.ScanOptions
 import com.smartattend.databinding.FragmentMarkAttendanceBinding
 import com.smartattend.util.Resource
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -118,6 +121,8 @@ class MarkAttendanceFragment : Fragment() {
 
         // Refresh location
         binding.btnRefreshLocation.setOnClickListener { getLocation() }
+
+        binding.layoutEmpty.btnRetry.setOnClickListener { viewModel.loadActiveSessions() }
 
         // Session selection
         binding.rvActiveSessions.adapter = ActiveSessionsAdapter { session ->
@@ -234,32 +239,43 @@ class MarkAttendanceFragment : Fragment() {
     }
 
     private fun setupObservers() {
-        lifecycleScope.launch {
-            viewModel.markState.collect { state ->
-                when (state) {
-                    is Resource.Loading -> {
-                        binding.progressBar.visibility = View.VISIBLE
-                        binding.btnMarkByCode.isEnabled = false
-                    }
-                    is Resource.Success -> {
-                        binding.progressBar.visibility = View.GONE
-                        binding.btnMarkByCode.isEnabled = true
-                        showToast(state.data.message)
-                        viewModel.loadActiveSessions()
-                    }
-                    is Resource.Error -> {
-                        binding.progressBar.visibility = View.GONE
-                        binding.btnMarkByCode.isEnabled = true
-                        showToast(state.message)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.markState.collectLatest { state ->
+                    when (state) {
+                        is Resource.Loading -> {
+                            binding.progressBar.visibility = View.VISIBLE
+                            binding.btnMarkByCode.isEnabled = false
+                        }
+                        is Resource.Success -> {
+                            binding.progressBar.visibility = View.GONE
+                            binding.btnMarkByCode.isEnabled = true
+                            showToast(state.data.message)
+                            viewModel.loadActiveSessions()
+                        }
+                        is Resource.Error -> {
+                            binding.progressBar.visibility = View.GONE
+                            binding.btnMarkByCode.isEnabled = true
+                            showToast(state.message)
+                        }
                     }
                 }
             }
         }
 
-        lifecycleScope.launch {
-            viewModel.sessions.collect { sessions ->
-                (binding.rvActiveSessions.adapter as? ActiveSessionsAdapter)?.submitList(sessions)
-                binding.tvNoSessions.visibility = if (sessions.isEmpty()) View.VISIBLE else View.GONE
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.sessions.collectLatest { sessions ->
+                    (binding.rvActiveSessions.adapter as? ActiveSessionsAdapter)?.submitList(sessions)
+                    if (sessions.isEmpty()) {
+                        binding.layoutEmpty.root.visibility = View.VISIBLE
+                        binding.layoutEmpty.tvEmptyTitle.text = "No Active Sessions"
+                        binding.layoutEmpty.tvEmptyMessage.text = "Ask your teacher to start a session"
+                        binding.layoutEmpty.btnRetry.visibility = View.VISIBLE
+                    } else {
+                        binding.layoutEmpty.root.visibility = View.GONE
+                    }
+                }
             }
         }
     }

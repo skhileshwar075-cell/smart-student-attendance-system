@@ -2,62 +2,162 @@
 <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/swipeRefresh"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ScrollView
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/background">
+        android:layout_height="match_parent">
 
-        <LinearLayout
+        <include
+            android:id="@+id/layoutShimmer"
+            layout="@layout/layout_student_dashboard_shimmer"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:layout_height="match_parent"
+            android:visibility="gone" />
 
-            <TextView
-                android:id="@+id/tvError"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/red_600"
-                android:padding="12dp"
-                android:visibility="gone"
-                android:background="@color/red_50" />
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/scrollView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/background">
 
             <LinearLayout
-                android:id="@+id/contentLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
+                android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tvWelcome"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Welcome, Student"
-                    android:textSize="22sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/gray_900"
-                    android:layout_marginBottom="4dp" />
+                <include
+                    android:id="@+id/layoutEmpty"
+                    layout="@layout/layout_empty_state"
+                    android:visibility="gone" />
 
-                <TextView
-                    android:id="@+id/tvSubjectCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="13sp"
-                    android:textColor="@color/gray_500"
-                    android:layout_marginBottom="16dp" />
-
-                <com.google.android.material.card.MaterialCardView
+                <LinearLayout
+                    android:id="@+id/contentLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp"
-                    app:cardBackgroundColor="@color/brand_primary"
-                    android:layout_marginBottom="16dp">
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <!-- Premium Student Hero Header -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:cardElevation="6dp"
+                        app:cardCornerRadius="0dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="24dp"
+                            android:background="@drawable/gradient_student_hero">
+
+                            <TextView
+                                android:id="@+id/tvWelcome"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Welcome, Student"
+                                android:textColor="@color/blue_100"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:textAllCaps="true"
+                                android:letterSpacing="0.1" />
+
+                            <TextView
+                                android:id="@+id/tvHeaderDate"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Monday, 1 January 2024"
+                                android:textColor="@color/blue_100"
+                                android:textSize="12sp"
+                                android:layout_marginTop="2dp" />
+
+                            <TextView
+                                android:id="@+id/tvStudentName"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Alex Johnson"
+                                android:textColor="@color/white"
+                                android:textSize="28sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="4dp" />
+
+                            <!-- Floating Attendance Summary Card -->
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                app:cardCornerRadius="20dp"
+                                app:cardBackgroundColor="#26FFFFFF"
+                                app:cardElevation="0dp"
+                                android:layout_marginTop="24dp">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal"
+                                    android:padding="20dp"
+                                    android:gravity="center_vertical">
+
+                                    <LinearLayout
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:orientation="vertical">
+
+                                        <TextView
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="Overall Attendance"
+                                            android:textColor="@color/blue_100"
+                                            android:textSize="12sp" />
+
+                                        <TextView
+                                            android:id="@+id/tvOverallPercentage"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="0%"
+                                            android:textColor="@color/white"
+                                            android:textSize="36sp"
+                                            android:textStyle="bold" />
+                                    </LinearLayout>
+
+                                    <View
+                                        android:layout_width="1dp"
+                                        android:layout_height="40dp"
+                                        android:background="#33FFFFFF"
+                                        android:layout_marginHorizontal="16dp" />
+
+                                    <LinearLayout
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:orientation="vertical"
+                                        android:gravity="end">
+
+                                        <TextView
+                                            android:id="@+id/tvAttendanceStatus"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="Good Standing"
+                                            android:textColor="@color/green_100"
+                                            android:textSize="14sp"
+                                            android:textStyle="bold" />
+
+                                        <TextView
+                                            android:id="@+id/tvSubjectCount"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="0 subjects enrolled"
+                                            android:textColor="@color/blue_100"
+                                            android:textSize="11sp"
+                                            android:layout_marginTop="2dp" />
+                                    </LinearLayout>
+                                </LinearLayout>
+                            </com.google.android.material.card.MaterialCardView>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -65,113 +165,105 @@
                         android:orientation="vertical"
                         android:padding="20dp">
 
+                        <!-- Main Stats Bar -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="2dp"
+                            app:cardBackgroundColor="@color/white"
+                            android:layout_marginBottom="24dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:padding="16dp">
+
+                                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+                                    <TextView android:id="@+id/tvTotalClasses" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="18sp" android:textStyle="bold" android:textColor="@color/gray_800" />
+                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Total" android:textSize="11sp" android:textColor="@color/gray_500" />
+                                </LinearLayout>
+
+                                <View android:layout_width="1dp" android:layout_height="24dp" android:background="@color/gray_200" android:layout_gravity="center_vertical" />
+
+                                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+                                    <TextView android:id="@+id/tvPresentCount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="18sp" android:textStyle="bold" android:textColor="@color/green_600" />
+                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Present" android:textSize="11sp" android:textColor="@color/gray_500" />
+                                </LinearLayout>
+
+                                <View android:layout_width="1dp" android:layout_height="24dp" android:background="@color/gray_200" android:layout_gravity="center_vertical" />
+
+                                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+                                    <TextView android:id="@+id/tvAbsentCount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="18sp" android:textStyle="bold" android:textColor="@color/red_500" />
+                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Absent" android:textSize="11sp" android:textColor="@color/gray_500" />
+                                </LinearLayout>
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Overall Attendance"
-                            android:textSize="14sp"
-                            android:textColor="#BFDBFE"
-                            android:layout_marginBottom="4dp" />
+                            android:text="MY SUBJECTS"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/gray_500"
+                            android:letterSpacing="0.1"
+                            android:layout_marginBottom="12dp"
+                            android:layout_marginStart="4dp" />
 
                         <LinearLayout
+                            android:id="@+id/subjectsLayout"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
+                            android:orientation="vertical"
+                            android:layout_marginBottom="24dp" />
 
-                            <TextView
-                                android:id="@+id/tvOverallPercentage"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="—%"
-                                android:textSize="42sp"
-                                android:textStyle="bold"
-                                android:textColor="@android:color/white" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="RECENT ACTIVITY"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/gray_500"
+                            android:letterSpacing="0.1"
+                            android:layout_marginBottom="12dp"
+                            android:layout_marginStart="4dp" />
 
-                            <TextView
-                                android:id="@+id/tvAttendanceStatus"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Good Standing"
-                                android:textSize="14sp"
-                                android:textColor="@color/green_500"
-                                android:textStyle="bold" />
-
-                        </LinearLayout>
-
-                        <LinearLayout
+                        <com.google.android.material.card.MaterialCardView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:layout_marginTop="12dp">
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="1dp"
+                            app:cardBackgroundColor="@color/white">
 
-                            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-                                <TextView android:id="@+id/tvTotalClasses" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textSize="20sp" android:textStyle="bold" android:textColor="@android:color/white" />
-                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Total" android:textSize="11sp" android:textColor="#93C5FD" />
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:padding="8dp">
+
+                                <LinearLayout
+                                    android:id="@+id/recentLayout"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="vertical" />
+
+                                <TextView
+                                    android:id="@+id/tvNoRecent"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="No recent attendance records"
+                                    android:gravity="center"
+                                    android:textColor="@color/gray_400"
+                                    android:padding="20dp"
+                                    android:visibility="gone" />
                             </LinearLayout>
-
-                            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-                                <TextView android:id="@+id/tvPresentCount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textSize="20sp" android:textStyle="bold" android:textColor="#86EFAC" />
-                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Present" android:textSize="11sp" android:textColor="#93C5FD" />
-                            </LinearLayout>
-
-                            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-                                <TextView android:id="@+id/tvAbsentCount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textSize="20sp" android:textStyle="bold" android:textColor="#FCA5A5" />
-                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Absent" android:textSize="11sp" android:textColor="#93C5FD" />
-                            </LinearLayout>
-
-                        </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
 
                     </LinearLayout>
-
-                </com.google.android.material.card.MaterialCardView>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="My Subjects"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/gray_800"
-                    android:layout_marginBottom="10dp" />
-
-                <LinearLayout
-                    android:id="@+id/subjectsLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginBottom="16dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Recent Activity"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/gray_800"
-                    android:layout_marginBottom="10dp" />
-
-                <LinearLayout
-                    android:id="@+id/recentLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical" />
-
-                <TextView
-                    android:id="@+id/tvNoRecent"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="No recent attendance records"
-                    android:gravity="center"
-                    android:textColor="@color/gray_400"
-                    android:padding="20dp"
-                    android:visibility="gone" />
-
+                </LinearLayout>
             </LinearLayout>
-
-        </LinearLayout>
-
-    </ScrollView>
-
+        </androidx.core.widget.NestedScrollView>
+    </RelativeLayout>
 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

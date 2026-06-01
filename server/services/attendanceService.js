@@ -12,10 +12,10 @@ async function getLowAttendanceShortlist({ teacherId, class_id, subject_id, from
     SELECT s.id as student_id, u.name, s.student_id as student_code, s.roll_number,
       u.phone,
       c.name as class_name, c.section,
-      COUNT(*) as total_classes,
+      COUNT(*) FILTER (WHERE a.status != 'holiday') as total_classes,
       SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END) as present_count,
       SUM(CASE WHEN a.status='absent' THEN 1 ELSE 0 END) as absent_count,
-      ROUND(100.0*SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END)/NULLIF(COUNT(*),0),1) as percentage
+      ROUND(100.0*SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END)/NULLIF(COUNT(*) FILTER (WHERE a.status != 'holiday'),0),1) as percentage
     FROM attendance a
     JOIN students s ON s.id=a.student_id
     JOIN users u ON u.id=s.user_id
@@ -30,7 +30,7 @@ async function getLowAttendanceShortlist({ teacherId, class_id, subject_id, from
 
   sql += ` GROUP BY s.id, u.name, u.phone, s.student_id, s.roll_number, c.name, c.section`;
   params.push(thresh);
-  sql += ` HAVING ROUND(100.0*SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END)/NULLIF(COUNT(*),0),1) < $${params.length}`;
+  sql += ` HAVING ROUND(100.0*SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END)/NULLIF(COUNT(*) FILTER (WHERE a.status != 'holiday'),0),1) < $${params.length}`;
   sql += ` ORDER BY percentage ASC`;
 
   const result = await query(sql, params);
@@ -43,10 +43,10 @@ async function getClassWiseAnalytics({ from, to }) {
   const result = await query(`
     SELECT c.id, c.name as class_name, c.section,
       COUNT(DISTINCT s.id) as total_students,
-      COUNT(*) as total_records,
+      COUNT(*) FILTER (WHERE a.status != 'holiday') as total_records,
       SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END) as present_count,
       SUM(CASE WHEN a.status='absent' THEN 1 ELSE 0 END) as absent_count,
-      ROUND(100.0*SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END)/NULLIF(COUNT(*),0),1) as avg_attendance
+      ROUND(100.0*SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END)/NULLIF(COUNT(*) FILTER (WHERE a.status != 'holiday'),0),1) as avg_attendance
     FROM attendance a
     JOIN students s ON s.id=a.student_id
     LEFT JOIN classes c ON c.id=s.class_id
@@ -64,10 +64,10 @@ async function getSubjectWiseAnalytics({ from, to, class_id }) {
   let sql = `
     SELECT sub.id, sub.name as subject_name, sub.code,
       c.name as class_name, c.section,
-      COUNT(*) as total_records,
+      COUNT(*) FILTER (WHERE a.status != 'holiday') as total_records,
       SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END) as present_count,
       SUM(CASE WHEN a.status='absent' THEN 1 ELSE 0 END) as absent_count,
-      ROUND(100.0*SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END)/NULLIF(COUNT(*),0),1) as avg_attendance
+      ROUND(100.0*SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END)/NULLIF(COUNT(*) FILTER (WHERE a.status != 'holiday'),0),1) as avg_attendance
     FROM attendance a
     JOIN subjects sub ON sub.id=a.subject_id
     LEFT JOIN classes c ON c.id=sub.class_id
@@ -84,16 +84,16 @@ async function getStudentAnalysis(studentId, { from, to }) {
   const [profile, overall, bySubject] = await Promise.all([
     query(`SELECT u.name, u.email, s.student_id as student_code, c.name as class_name, c.section
            FROM students s JOIN users u ON u.id=s.user_id LEFT JOIN classes c ON c.id=s.class_id WHERE s.id=$1`, [studentId]),
-    query(`SELECT COUNT(*) as total_classes,
+    query(`SELECT COUNT(*) FILTER (WHERE a.status != 'holiday') as total_classes,
              SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END) as present_count,
              SUM(CASE WHEN a.status='absent' THEN 1 ELSE 0 END) as absent_count,
-             ROUND(100.0*SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END)/NULLIF(COUNT(*),0),1) as percentage
+             ROUND(100.0*SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END)/NULLIF(COUNT(*) FILTER (WHERE a.status != 'holiday'),0),1) as percentage
            FROM attendance a WHERE a.student_id=$1 AND a.date BETWEEN $2 AND $3`, [studentId, dateFrom, dateTo]),
     query(`SELECT sub.name as subject_name, sub.code,
-             COUNT(*) as total_classes,
+             COUNT(*) FILTER (WHERE a.status != 'holiday') as total_classes,
              SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END) as present_count,
              SUM(CASE WHEN a.status='absent' THEN 1 ELSE 0 END) as absent_count,
-             ROUND(100.0*SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END)/NULLIF(COUNT(*),0),1) as percentage
+             ROUND(100.0*SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END)/NULLIF(COUNT(*) FILTER (WHERE a.status != 'holiday'),0),1) as percentage
            FROM attendance a JOIN subjects sub ON sub.id=a.subject_id
            WHERE a.student_id=$1 AND a.date BETWEEN $2 AND $3
            GROUP BY sub.id, sub.name, sub.code ORDER BY percentage ASC`, [studentId, dateFrom, dateTo]),

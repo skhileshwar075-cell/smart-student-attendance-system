@@ -41,10 +41,23 @@ class LoginActivity : AppCompatActivity() {
             viewModel.login(email, password)
         }
 
-        // Demo credentials hint
-        binding.tvDemoCredentials.setOnClickListener {
+        // Demo credentials listeners
+        binding.chipAdmin.setOnClickListener {
+            binding.etEmail.setText("admin@smartattend.edu")
+            binding.etPassword.setText("Admin@123")
+            binding.tvRoleLabel.text = "Signing in as Admin"
+        }
+
+        binding.chipTeacher.setOnClickListener {
+            binding.etEmail.setText("priya@smartattend.edu")
+            binding.etPassword.setText("Teacher@123")
+            binding.tvRoleLabel.text = "Signing in as Teacher"
+        }
+
+        binding.chipStudent.setOnClickListener {
             binding.etEmail.setText("aarav@smartattend.edu")
             binding.etPassword.setText("Student@123")
+            binding.tvRoleLabel.text = "Signing in as Student"
         }
 
         binding.tvForgotPassword.setOnClickListener {

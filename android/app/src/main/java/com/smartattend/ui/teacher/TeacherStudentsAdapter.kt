@@ -8,6 +8,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import androidx.core.content.ContextCompat
 import com.smartattend.R
 import com.smartattend.domain.model.Student
 
@@ -31,17 +32,22 @@ class TeacherStudentsAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val item = getItem(position)
+        val context = holder.itemView.context
+        
         holder.tvInitial.text = item.name.firstOrNull()?.uppercase() ?: "?"
         holder.tvName.text = item.name
         holder.tvEmail.text = item.email
         holder.tvRoll.text = item.studentId?.let { "Roll: $it" } ?: ""
-        holder.tvStatus.text = if (item.isActive == true) "Active" else "Inactive"
+        
+        val isActive = item.isActive == true
+        holder.tvStatus.text = if (isActive) "Active" else "Inactive"
         holder.tvStatus.setTextColor(
-            if (item.isActive == true)
-                android.graphics.Color.parseColor("#16A34A")
-            else
-                android.graphics.Color.parseColor("#DC2626")
+            ContextCompat.getColor(
+                context,
+                if (isActive) R.color.green_600 else R.color.red_600
+            )
         )
+
         holder.btnEdit.setOnClickListener { onEdit(item) }
         holder.btnDelete.setOnClickListener { onDelete(item) }
     }

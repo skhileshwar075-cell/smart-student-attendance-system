@@ -297,6 +297,7 @@
                 </LinearLayout>
 
                 <TextView
+                    android:id="@+id/tvDemoCredentials"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Tap a chip to auto-fill credentials"
@@ -304,6 +305,17 @@
                     android:textColor="#CBD5E1"
                     android:layout_gravity="center"
                     android:layout_marginTop="8dp" />
+
+                <TextView
+                    android:id="@+id/tvRegister"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Don't have an account? Register"
+                    android:textSize="13sp"
+                    android:textColor="#2563EB"
+                    android:layout_marginTop="16dp"
+                    android:layout_gravity="center"
+                    android:padding="8dp" />
 
             </LinearLayout>
 

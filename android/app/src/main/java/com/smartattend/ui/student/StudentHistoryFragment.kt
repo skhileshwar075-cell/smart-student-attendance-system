@@ -40,6 +40,10 @@ class StudentHistoryFragment : Fragment() {
             viewModel.loadHistory(viewModel.selectedSubjectId)
         }
 
+        binding.emptyState.btnRetry.setOnClickListener {
+            viewModel.loadHistory(viewModel.selectedSubjectId)
+        }
+
         setupObservers()
     }
 
@@ -68,19 +72,28 @@ class StudentHistoryFragment : Fragment() {
                 when (state) {
                     is Resource.Loading -> {
                         binding.swipeRefresh.isRefreshing = true
-                        binding.tvEmpty.visibility = View.GONE
+                        binding.emptyState.emptyStateRoot.visibility = View.GONE
                     }
                     is Resource.Success -> {
                         binding.swipeRefresh.isRefreshing = false
                         val records = state.data.records
                         adapter.submitList(records)
-                        binding.tvEmpty.visibility = if (records.isEmpty()) View.VISIBLE else View.GONE
+                        if (records.isEmpty()) {
+                            binding.emptyState.emptyStateRoot.visibility = View.VISIBLE
+                            binding.emptyState.tvEmptyTitle.text = "No History Found"
+                            binding.emptyState.tvEmptyMessage.text = "You haven't marked any attendance yet."
+                            binding.emptyState.btnRetry.visibility = View.VISIBLE
+                        } else {
+                            binding.emptyState.emptyStateRoot.visibility = View.GONE
+                        }
                         binding.tvRecordCount.text = "${records.size} records"
                     }
                     is Resource.Error -> {
                         binding.swipeRefresh.isRefreshing = false
-                        binding.tvEmpty.visibility = View.VISIBLE
-                        binding.tvEmpty.text = state.message
+                        binding.emptyState.emptyStateRoot.visibility = View.VISIBLE
+                        binding.emptyState.tvEmptyTitle.text = "Error Loading History"
+                        binding.emptyState.tvEmptyMessage.text = state.message
+                        binding.emptyState.btnRetry.visibility = View.VISIBLE
                     }
                 }
             }

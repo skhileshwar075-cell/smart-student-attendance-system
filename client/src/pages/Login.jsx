@@ -195,7 +195,7 @@ export default function Login() {
 
                   {/* Demo accounts */}
                   <div className="mt-5 pt-5 border-t border-gray-100">
-                    <p className="text-center text-xs text-gray-400 mb-3 font-medium">Quick Demo Login</p>
+                    <p className="text-center text-xs text-gray-400 mb-3 font-medium">🚀 Demo Access</p>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                       {DEMO.map(acc => (
                         <button
@@ -203,11 +203,11 @@ export default function Login() {
                           onClick={() => { setEmail(acc.email); setPassword(acc.password); }}
                           className={`border rounded-xl py-2 text-xs font-semibold transition-all ${acc.color}`}
                         >
-                          {acc.label}
+                          {acc.label} Demo
                         </button>
                       ))}
                     </div>
-                    <p className="text-center text-[10px] text-gray-300 mt-2">Click to auto-fill credentials</p>
+                    <p className="text-center text-[10px] text-gray-300 mt-2">For judges and evaluators.</p>
                   </div>
                 </>
               ) : (

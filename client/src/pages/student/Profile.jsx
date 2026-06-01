@@ -6,6 +6,7 @@ import {
   Camera, AlertTriangle, TrendingUp, FileText, Bell,
   Phone, Mail, Hash, BookOpen, Calendar, Shield
 } from 'lucide-react';
+import FaceCapture from '../../components/FaceCapture';
 import { InputField, PasswordField } from '../../components/FormFields';
 
 function InfoTile({ label, value, icon: Icon }) {
@@ -63,11 +64,55 @@ export default function StudentProfile() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [stats, setStats] = useState(null);
   const [requests, setRequests] = useState([]);
+  const [faceStatus, setFaceStatus] = useState(null);
+  const [faceLoading, setFaceLoading] = useState(false);
+  const [faceRegistering, setFaceRegistering] = useState(false);
+  const [showFaceCaptureReg, setShowFaceCaptureReg] = useState(false);
   const fileRef = useRef();
 
   useEffect(() => {
     if (tab === 'Stats') loadStats();
+    if (tab === 'Security') loadFaceStatus();
   }, [tab]);
+
+  const loadFaceStatus = async () => {
+    setFaceLoading(true);
+    try {
+      const res = await axios.get('/api/auth/face/status');
+      setFaceStatus(res.data);
+    } catch (err) {
+      setFaceStatus(null);
+    } finally {
+      setFaceLoading(false);
+    }
+  };
+
+  const handleFaceRegister = async (verified, embedding) => {
+    if (!verified || !embedding) {
+      setToast('error:Face scan failed. Please try again.');
+      setShowFaceCaptureReg(false);
+      return;
+    }
+    setFaceRegistering(true);
+    try {
+      await axios.post('/api/auth/face/register', { face_encoding: embedding });
+      setToast('Face registered successfully!');
+      await loadFaceStatus();
+      setShowFaceCaptureReg(false);
+    } catch (err) {
+      setToast(`error:${err.response?.data?.error || 'Face registration failed'}`);
+    } finally {
+      setFaceRegistering(false);
+    }
+  };
+
+  const startFaceRegistration = () => {
+    setShowFaceCaptureReg(true);
+  };
+
+  const cancelFaceRegistration = () => {
+    setShowFaceCaptureReg(false);
+  };
 
   const loadStats = async () => {
     try {
@@ -281,9 +326,40 @@ export default function StudentProfile() {
 
       {/* ── Security Tab ──────────────────────────────────────── */}
       {tab === 'Security' && (
-        <div className="card">
-          <h3 className="section-title mb-4"><Shield size={15} className="text-blue-500" /> Change Password</h3>
-          <form onSubmit={changePassword} className="space-y-4">
+        <>
+          <div className="card space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="section-title mb-2"><Shield size={15} className="text-blue-500" /> Face Registration</h3>
+                <p className="text-sm text-gray-500">Register your face once to support secure attendance sessions and stronger identity proof.</p>
+              </div>
+              <button type="button" onClick={startFaceRegistration} disabled={faceRegistering} className="btn-secondary text-xs px-3 py-2">
+                {faceStatus?.faceRegistered ? 'Re-register Face' : 'Register Face'}
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-xl border border-gray-100 p-3 bg-gray-50">
+                <p className="text-xs text-gray-500">Status</p>
+                <p className="font-semibold text-gray-900 mt-1">{faceLoading ? 'Loading...' : faceStatus?.faceRegistered ? 'Registered' : 'Not registered'}</p>
+              </div>
+              <div className="rounded-xl border border-gray-100 p-3 bg-gray-50">
+                <p className="text-xs text-gray-500">Required for secure mode</p>
+                <p className="font-semibold text-gray-900 mt-1">Yes</p>
+              </div>
+            </div>
+            {faceStatus?.faceRegisteredAt && !faceLoading && (
+              <p className="text-xs text-gray-500">Registered at {new Date(faceStatus.faceRegisteredAt).toLocaleString()}</p>
+            )}
+            {showFaceCaptureReg && (
+              <div className="mt-4">
+                <FaceCapture title="Register Face" onVerified={handleFaceRegister} onSkip={cancelFaceRegistration} allowSkip={false} />
+              </div>
+            )}
+          </div>
+
+          <div className="card">
+            <h3 className="section-title mb-4"><Shield size={15} className="text-blue-500" /> Change Password</h3>
+            <form onSubmit={changePassword} className="space-y-4">
             <div>
               <label className="label">Current Password</label>
               <PasswordField icon={Lock} visible={showCur} onToggleVisible={() => setShowCur(v => !v)} value={pwdForm.currentPassword} onChange={e => setPwdForm(p => ({ ...p, currentPassword: e.target.value }))} required placeholder="Your current password" />
@@ -304,6 +380,7 @@ export default function StudentProfile() {
             </button>
           </form>
         </div>
+      </>
       )}
     </div>
   );

@@ -54,6 +54,38 @@ class AdminRepository @Inject constructor(private val api: ApiService) {
     suspend fun getAnalytics(from: String? = null, to: String? = null) =
         safeCall { api.getAnalytics(from, to) }
 
+    suspend fun getReports(
+        from: String? = null,
+        to: String? = null,
+        classId: String? = null,
+        subjectId: String? = null,
+        studentId: String? = null,
+        semester: Int? = null,
+        session: String? = null
+    ) = safeCall { api.getAdminReports(from, to, classId, subjectId, studentId, semester, session) }
+
+    suspend fun getPivotReport(
+        from: String? = null,
+        to: String? = null,
+        classId: String? = null,
+        subjectId: String? = null
+    ) = safeCall { api.getAdminPivotReport(from, to, classId, subjectId) }
+
+    suspend fun getLowAttendanceShortlist(
+        classId: String? = null,
+        subjectId: String? = null,
+        from: String? = null,
+        to: String? = null,
+        threshold: Int? = null,
+        search: String? = null
+    ) = safeCall { api.getAdminLowAttendanceShortlist(classId, subjectId, from, to, threshold, search) }
+
+    suspend fun getNotifications() = safeCall { api.getNotifications() }
+
+    suspend fun markNotificationRead(id: String) = safeCall { api.markNotificationRead(id) }
+
+    suspend fun markAllNotificationsRead() = safeCall { api.markAllNotificationsRead() }
+
     suspend fun getAuditLogs() = safeCall { api.getAuditLogs() }
 
     suspend fun getAnomalies() = safeCall { api.getAnomalies() }
@@ -73,11 +105,18 @@ class AdminRepository @Inject constructor(private val api: ApiService) {
 
     suspend fun promoteStudents(req: PromoteRequest) = safeCall { api.promoteStudents(req) }
 
+    suspend fun sendAlert(studentId: String, percentage: Double) =
+        safeCall { api.sendAlert(AlertRequest(studentId, attendancePct = percentage)) }
+
     private suspend fun <T> safeCall(call: suspend () -> retrofit2.Response<T>): Resource<T> {
         return try {
             val response = call()
-            if (response.isSuccessful && response.body() != null) Resource.Success(response.body()!!)
-            else Resource.Error(response.errorBody()?.string() ?: "Error ${response.code()}")
+            val body = response.body()
+            if (response.isSuccessful && body != null) Resource.Success(body)
+            else {
+                val error = response.errorBody()?.string() ?: "Unknown error"
+                Resource.Error(error)
+            }
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Network error")
         }

@@ -21,6 +21,7 @@ class ManualAttendanceAdapter(
         fun bind(student: Student) {
             binding.tvStudentName.text = student.name
             binding.tvStudentId.text = "${student.studentId} | ${student.rollNumber ?: ""}"
+            binding.tvStudentInitial.text = student.name.firstOrNull()?.uppercase() ?: "?"
 
             val status = statusMap[student.id] ?: "present"
             binding.chipPresent.isChecked = status == "present"

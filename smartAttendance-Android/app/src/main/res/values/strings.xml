@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SmartAttend</string>
+    <string name="tagline">Track . Secure . Analyze</string>
+    <string name="offline_title">You\'re offline</string>
+    <string name="offline_message">Check your internet connection and try again.</string>
+    <string name="retry">Retry</string>
+    <string name="still_offline">Still offline</string>
+    <string name="exit_title">Exit App</string>
+    <string name="exit_message">Are you sure you want to exit?</string>
+    <string name="exit_yes">Exit</string>
+    <string name="exit_no">Cancel</string>
+    <string name="ssl_error">Secure connection failed.</string>
+    <string name="no_app_to_handle">No app available to open this link.</string>
+    <string name="choose_file">Choose file</string>
+    <string name="downloading">Downloading…</string>
+    <string name="download_started">Download started</string>
+    <string name="download_failed">Download failed</string>
+    <string name="permission_denied">Permission denied</string>
+</resources>

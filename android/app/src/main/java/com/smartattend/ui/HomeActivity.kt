@@ -41,11 +41,9 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun animateEntrance() {
-        val slideUp = AnimationUtils.loadAnimation(this, android.R.anim.slide_in_left)
-        slideUp.duration = 400
-
+        // Ensure views start visible or use a fallback if animations fail
         listOf(binding.cardStudent, binding.cardTeacher, binding.cardAdmin).forEachIndexed { i, card ->
-            card.alpha = 0f
+            card.alpha = 1f
             card.translationY = 60f
             card.animate()
                 .alpha(1f)
@@ -55,7 +53,7 @@ class HomeActivity : AppCompatActivity() {
                 .start()
         }
 
-        binding.btnRegister.alpha = 0f
+        binding.btnRegister.alpha = 1f
         binding.btnRegister.animate()
             .alpha(1f)
             .setDuration(400)

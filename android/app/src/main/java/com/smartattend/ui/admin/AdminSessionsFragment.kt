@@ -13,7 +13,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
@@ -52,47 +54,58 @@ class AdminSessionsFragment : Fragment() {
         binding.swipeRefresh.setOnRefreshListener { viewModel.load() }
         binding.btnAddSession.setOnClickListener { showCreateDialog() }
         binding.btnPromote.setOnClickListener { showPromoteDialog() }
+        binding.layoutEmpty.btnRetry.setOnClickListener { viewModel.load() }
 
         observeState()
     }
 
     private fun observeState() {
-        lifecycleScope.launch {
-            viewModel.sessions.collect { state ->
-                binding.swipeRefresh.isRefreshing = state is Resource.Loading
-                when (state) {
-                    is Resource.Success -> {
-                        binding.tvError.visibility = View.GONE
-                        binding.tvEmpty.visibility = if (state.data.isEmpty()) View.VISIBLE else View.GONE
-                        adapter.submitList(state.data)
-                        val active = state.data.firstOrNull { it.isActive }
-                        if (active != null) {
-                            binding.tvActiveSession.visibility = View.VISIBLE
-                            binding.tvActiveSession.text = "Active: ${active.name}"
-                        } else {
-                            binding.tvActiveSession.visibility = View.GONE
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.sessions.collect { state ->
+                    binding.swipeRefresh.isRefreshing = state is Resource.Loading
+                    when (state) {
+                        is Resource.Success -> {
+                            binding.layoutEmpty.root.visibility = if (state.data.isEmpty()) View.VISIBLE else View.GONE
+                            if (state.data.isEmpty()) {
+                                binding.layoutEmpty.tvEmptyTitle.text = "No Sessions Found"
+                                binding.layoutEmpty.tvEmptyMessage.text = "Tap '+ New' to create an academic session."
+                                binding.layoutEmpty.btnRetry.visibility = View.GONE
+                            }
+                            adapter.submitList(state.data)
+                            val active = state.data.firstOrNull { it.isActive }
+                            if (active != null) {
+                                binding.tvActiveSession.visibility = View.VISIBLE
+                                binding.tvActiveSession.text = "Active: ${active.name}"
+                            } else {
+                                binding.tvActiveSession.visibility = View.GONE
+                            }
                         }
+                        is Resource.Error -> {
+                            binding.layoutEmpty.root.visibility = View.VISIBLE
+                            binding.layoutEmpty.tvEmptyTitle.text = "Error Loading Sessions"
+                            binding.layoutEmpty.tvEmptyMessage.text = state.message
+                            binding.layoutEmpty.btnRetry.visibility = View.VISIBLE
+                        }
+                        else -> {}
                     }
-                    is Resource.Error -> {
-                        binding.tvError.visibility = View.VISIBLE
-                        binding.tvError.text = state.message
-                    }
-                    else -> {}
                 }
             }
         }
-        lifecycleScope.launch {
-            viewModel.actionResult.collect { result ->
-                when (result) {
-                    is Resource.Success -> {
-                        Toast.makeText(requireContext(), result.data, Toast.LENGTH_LONG).show()
-                        viewModel.clearActionResult()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.actionResult.collect { result ->
+                    when (result) {
+                        is Resource.Success -> {
+                            Toast.makeText(requireContext(), result.data, Toast.LENGTH_LONG).show()
+                            viewModel.clearActionResult()
+                        }
+                        is Resource.Error -> {
+                            Toast.makeText(requireContext(), result.message, Toast.LENGTH_LONG).show()
+                            viewModel.clearActionResult()
+                        }
+                        else -> {}
                     }
-                    is Resource.Error -> {
-                        Toast.makeText(requireContext(), result.message, Toast.LENGTH_LONG).show()
-                        viewModel.clearActionResult()
-                    }
-                    else -> {}
                 }
             }
         }

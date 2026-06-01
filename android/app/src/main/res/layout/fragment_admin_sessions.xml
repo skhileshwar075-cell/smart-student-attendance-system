@@ -63,30 +63,13 @@
 
         </LinearLayout>
 
-        <!-- Error text -->
-        <TextView
-            android:id="@+id/tvError"
+        <include
+            android:id="@+id/layoutEmpty"
+            layout="@layout/layout_empty_state"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="12dp"
-            android:textColor="@color/red_600"
-            android:background="@color/red_50"
-            android:visibility="gone"
-            android:layout_marginHorizontal="16dp"
-            android:layout_marginBottom="8dp" />
-
-        <!-- Empty state -->
-        <TextView
-            android:id="@+id/tvEmpty"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="No academic sessions yet.\nTap '+ New' to create one."
-            android:textColor="@color/gray_400"
-            android:textAlignment="center"
-            android:padding="32dp"
             android:visibility="gone" />
 
-        <!-- Session list -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
             android:layout_width="match_parent"

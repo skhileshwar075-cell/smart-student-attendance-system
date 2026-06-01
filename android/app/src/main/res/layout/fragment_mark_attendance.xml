@@ -292,35 +292,11 @@
             android:indeterminateTint="@color/brand_primary"
             android:visibility="gone" />
 
-        <LinearLayout
-            android:id="@+id/layoutNoSessions"
+        <include
+            android:id="@+id/layoutEmpty"
+            layout="@layout/layout_empty_state"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="32dp"
-            android:visibility="visible">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="No active sessions"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="@color/gray_500"
-                android:gravity="center" />
-
-            <TextView
-                android:id="@+id/tvNoSessions"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Ask your teacher to start a session"
-                android:textSize="13sp"
-                android:textColor="@color/gray_400"
-                android:gravity="center"
-                android:layout_marginTop="4dp" />
-
-        </LinearLayout>
+            android:layout_height="wrap_content" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvActiveSessions"

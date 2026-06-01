@@ -23,13 +23,35 @@ class ActiveSessionsAdapter(
             binding.tvCode.text = session.code ?: "—"
             binding.tvGeoFence.text = if (session.geoLat != null) "📍 Geo-fenced (${session.geoRadius}m)" else "No geo-fence"
 
-            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
             try {
-                val expires = sdf.parse(session.expiresAt)
-                val diff = expires?.time?.minus(System.currentTimeMillis()) ?: 0
-                val mins = diff / 60000
-                val secs = (diff % 60000) / 1000
-                binding.tvTimeLeft.text = if (diff > 0) "${mins}m ${secs}s left" else "Expired"
+                val expiresAt = session.expiresAt
+                val formats = listOf(
+                    "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                    "yyyy-MM-dd'T'HH:mm:ss'Z'",
+                    "yyyy-MM-dd HH:mm:ss"
+                )
+                var parsedDate: Date? = null
+                for (fmt in formats) {
+                    try {
+                        val parser = SimpleDateFormat(fmt, Locale.getDefault())
+                        parser.timeZone = TimeZone.getTimeZone("UTC")
+                        parsedDate = parser.parse(expiresAt)
+                        if (parsedDate != null) break
+                    } catch (e: Exception) {}
+                }
+
+                if (parsedDate != null) {
+                    val diff = parsedDate.time - System.currentTimeMillis()
+                    if (diff > 0) {
+                        val mins = diff / 60000
+                        val secs = (diff % 60000) / 1000
+                        binding.tvTimeLeft.text = "${mins}m ${secs}s left"
+                    } else {
+                        binding.tvTimeLeft.text = "Expired"
+                    }
+                } else {
+                    binding.tvTimeLeft.text = expiresAt
+                }
             } catch (e: Exception) {
                 binding.tvTimeLeft.text = session.expiresAt
             }

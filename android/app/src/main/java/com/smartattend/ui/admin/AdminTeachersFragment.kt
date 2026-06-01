@@ -9,7 +9,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
@@ -55,6 +57,7 @@ class AdminTeachersFragment : Fragment() {
         })
 
         binding.fabAddTeacher.setOnClickListener { showCreateDialog() }
+        binding.layoutEmpty.btnRetry.setOnClickListener { viewModel.loadTeachers() }
         setupObservers()
     }
 
@@ -122,41 +125,55 @@ class AdminTeachersFragment : Fragment() {
     // ── Observers ─────────────────────────────────────────────────────────────
 
     private fun setupObservers() {
-        lifecycleScope.launch {
-            viewModel.teachers.collect { state ->
-                when (state) {
-                    is Resource.Loading -> {
-                        binding.swipeRefresh.isRefreshing = true
-                        binding.tvEmpty.visibility = View.GONE
-                    }
-                    is Resource.Success -> {
-                        binding.swipeRefresh.isRefreshing = false
-                        val list = state.data.teachers
-                        adapter.submitList(list)
-                        binding.tvEmpty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
-                        binding.tvCount.text = "${list.size} teachers"
-                    }
-                    is Resource.Error -> {
-                        binding.swipeRefresh.isRefreshing = false
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.teachers.collect { state ->
+                    when (state) {
+                        is Resource.Loading -> {
+                            binding.swipeRefresh.isRefreshing = true
+                            binding.layoutEmpty.root.visibility = View.GONE
+                        }
+                        is Resource.Success -> {
+                            binding.swipeRefresh.isRefreshing = false
+                            val list = state.data.teachers
+                            adapter.submitList(list)
+                            if (list.isEmpty()) {
+                                binding.layoutEmpty.root.visibility = View.VISIBLE
+                                binding.layoutEmpty.tvEmptyTitle.text = "No Teachers Found"
+                                binding.layoutEmpty.tvEmptyMessage.text = "Try a different search or add a teacher."
+                                binding.layoutEmpty.btnRetry.visibility = View.GONE
+                            } else {
+                                binding.layoutEmpty.root.visibility = View.GONE
+                            }
+                            binding.tvCount.text = "${list.size} teachers"
+                        }
+                        is Resource.Error -> {
+                            binding.swipeRefresh.isRefreshing = false
+                            binding.layoutEmpty.root.visibility = View.VISIBLE
+                            binding.layoutEmpty.tvEmptyTitle.text = "Error Loading Teachers"
+                            binding.layoutEmpty.tvEmptyMessage.text = state.message
+                            binding.layoutEmpty.btnRetry.visibility = View.VISIBLE
+                        }
                     }
                 }
             }
         }
 
-        lifecycleScope.launch {
-            viewModel.actionState.collect { state ->
-                when (state) {
-                    is Resource.Success -> {
-                        Toast.makeText(requireContext(), state.data, Toast.LENGTH_SHORT).show()
-                        viewModel.clearActionState()
-                        viewModel.loadTeachers()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.actionState.collect { state ->
+                    when (state) {
+                        is Resource.Success -> {
+                            Toast.makeText(requireContext(), state.data, Toast.LENGTH_SHORT).show()
+                            viewModel.clearActionState()
+                            viewModel.loadTeachers()
+                        }
+                        is Resource.Error -> {
+                            Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                            viewModel.clearActionState()
+                        }
+                        else -> {}
                     }
-                    is Resource.Error -> {
-                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
-                        viewModel.clearActionState()
-                    }
-                    else -> {}
                 }
             }
         }

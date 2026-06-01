@@ -7,12 +7,18 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.smartattend.R
 import com.smartattend.databinding.FragmentTeacherDashboardBinding
 import com.smartattend.domain.model.TeacherDashboard
 import com.smartattend.util.Resource
 import dagger.hilt.android.AndroidEntryPoint
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -30,33 +36,47 @@ class TeacherDashboardFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.swipeRefresh.setOnRefreshListener { viewModel.load() }
+        binding.layoutEmpty.btnRetry.setOnClickListener { viewModel.load() }
         setupObservers()
     }
 
     private fun setupObservers() {
-        lifecycleScope.launch {
-            viewModel.userName.collect { name ->
-                binding.tvWelcome.text = "Welcome, ${name ?: "Teacher"}"
-            }
-        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.userName.collectLatest { name ->
+                        binding.tvWelcome.text = "Welcome, ${name ?: "Teacher"}"
+                    }
+                }
 
-        lifecycleScope.launch {
-            viewModel.dashboard.collect { state ->
-                when (state) {
-                    is Resource.Loading -> {
-                        binding.swipeRefresh.isRefreshing = true
-                        binding.contentLayout.visibility = View.GONE
-                    }
-                    is Resource.Success -> {
-                        binding.swipeRefresh.isRefreshing = false
-                        binding.contentLayout.visibility = View.VISIBLE
-                        binding.tvError.visibility = View.GONE
-                        bindDashboard(state.data)
-                    }
-                    is Resource.Error -> {
-                        binding.swipeRefresh.isRefreshing = false
-                        binding.tvError.visibility = View.VISIBLE
-                        binding.tvError.text = state.message
+                launch {
+                    viewModel.dashboard.collectLatest { state ->
+                        when (state) {
+                            is Resource.Loading -> {
+                                binding.swipeRefresh.isRefreshing = true
+                                binding.layoutShimmer.root.visibility = View.VISIBLE
+                                binding.layoutShimmer.shimmerView.startShimmer()
+                                binding.contentLayout.visibility = View.GONE
+                                binding.layoutEmpty.root.visibility = View.GONE
+                            }
+                            is Resource.Success -> {
+                                binding.swipeRefresh.isRefreshing = false
+                                binding.layoutShimmer.shimmerView.stopShimmer()
+                                binding.layoutShimmer.root.visibility = View.GONE
+                                binding.contentLayout.visibility = View.VISIBLE
+                                binding.layoutEmpty.root.visibility = View.GONE
+                                bindDashboard(state.data)
+                            }
+                            is Resource.Error -> {
+                                binding.swipeRefresh.isRefreshing = false
+                                binding.layoutShimmer.shimmerView.stopShimmer()
+                                binding.layoutShimmer.root.visibility = View.GONE
+                                binding.contentLayout.visibility = View.GONE
+                                binding.layoutEmpty.root.visibility = View.VISIBLE
+                                binding.layoutEmpty.tvEmptyTitle.text = "Error Loading Dashboard"
+                                binding.layoutEmpty.tvEmptyMessage.text = state.message
+                            }
+                        }
                     }
                 }
             }
@@ -64,14 +84,17 @@ class TeacherDashboardFragment : Fragment() {
     }
 
     private fun bindDashboard(data: TeacherDashboard) {
-        binding.tvSubjectCount.text = "${data.subjects.size}"
-        binding.tvPresentToday.text = "${data.todayStats.present}"
-        binding.tvAbsentToday.text = "${data.todayStats.absent}"
-        binding.tvTotalToday.text = "${data.todayStats.total}"
-        binding.tvPendingRequests.text = "${data.pendingRequests}"
+        val sdf = SimpleDateFormat("EEEE, d MMMM yyyy", Locale.getDefault())
+        binding.tvHeaderDate.text = sdf.format(Date())
+
+        binding.tvSubjectCount.text = "${data.subjects?.size ?: 0}"
+        binding.tvPresentToday.text = "${data.todayStats?.present ?: 0}"
+        binding.tvAbsentToday.text = "${data.todayStats?.absent ?: 0}"
+        binding.tvTotalToday.text = "${data.todayStats?.total ?: 0}"
+        binding.tvPendingRequests.text = "${data.pendingRequests ?: 0}"
 
         binding.subjectsLayout.removeAllViews()
-        data.subjects.take(6).forEach { subject ->
+        data.subjects?.take(6)?.forEach { subject ->
             val subView = layoutInflater.inflate(R.layout.item_subject_card, binding.subjectsLayout, false)
             subView.findViewById<TextView>(R.id.tvSubjectName).text = subject.name
             subView.findViewById<TextView>(R.id.tvSubjectCode).text = subject.code
@@ -82,7 +105,7 @@ class TeacherDashboardFragment : Fragment() {
             binding.subjectsLayout.addView(subView)
         }
 
-        if (data.subjects.isEmpty()) {
+        if (data.subjects.isNullOrEmpty()) {
             binding.tvNoSubjects.visibility = View.VISIBLE
         }
     }

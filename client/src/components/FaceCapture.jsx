@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Camera, CheckCircle, XCircle, Loader, AlertCircle } from 'lucide-react';
 import { useFaceDetection } from '../hooks/useFaceDetection';
 
-export default function FaceCapture({ onVerified, onSkip }) {
+export default function FaceCapture({ onVerified, onSkip, allowSkip = true, title = 'Face Verification' }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const intervalRef = useRef(null);
@@ -14,7 +14,7 @@ export default function FaceCapture({ onVerified, onSkip }) {
 
   useEffect(() => {
     loadModel();
-  }, []);
+  }, [loadModel]);
 
   const startCamera = useCallback(async () => {
     try {
@@ -29,7 +29,7 @@ export default function FaceCapture({ onVerified, onSkip }) {
   }, []);
 
   const stopCamera = useCallback(() => {
-    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+    if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
     clearInterval(intervalRef.current);
     setCameraActive(false);
   }, []);
@@ -37,31 +37,31 @@ export default function FaceCapture({ onVerified, onSkip }) {
   useEffect(() => {
     if (cameraActive && isModelLoaded && videoRef.current) {
       intervalRef.current = setInterval(async () => {
-        const detected = await detectFace(videoRef.current);
-        setScanCount(c => c + 1);
+        const { detected, embedding } = await detectFace(videoRef.current);
+        setScanCount((c) => c + 1);
         if (detected) {
           clearInterval(intervalRef.current);
           setVerifying(true);
           setTimeout(() => {
             stopCamera();
             setVerifying(false);
-            onVerified(true);
+            onVerified(true, embedding);
           }, 1000);
         }
       }, 500);
     }
     return () => clearInterval(intervalRef.current);
-  }, [cameraActive, isModelLoaded]);
+  }, [cameraActive, isModelLoaded, detectFace, onVerified, stopCamera]);
 
   useEffect(() => {
     return () => stopCamera();
-  }, []);
+  }, [stopCamera]);
 
   return (
     <div className="attendance-card">
       <div className="flex items-center gap-2 mb-3">
         <Camera className="text-blue-600" size={18} />
-        <h3 className="font-semibold text-gray-700">Face Verification</h3>
+        <h3 className="font-semibold text-gray-700">{title}</h3>
         <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">TensorFlow.js</span>
       </div>
 
@@ -111,9 +111,11 @@ export default function FaceCapture({ onVerified, onSkip }) {
         ) : (
           <button onClick={stopCamera} className="btn-secondary flex-1">Stop Camera</button>
         )}
-        <button onClick={() => { stopCamera(); onSkip(); }} className="btn-secondary flex items-center gap-1 text-xs">
-          Skip
-        </button>
+        {allowSkip !== false && (
+          <button onClick={() => { stopCamera(); onSkip(); }} className="btn-secondary flex items-center gap-1 text-xs">
+            Skip
+          </button>
+        )}
       </div>
       <p className="text-xs text-gray-400 mt-2 text-center">Face verification adds an extra layer of security</p>
     </div>

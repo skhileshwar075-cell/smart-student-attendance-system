@@ -49,10 +49,10 @@ class AdminSubjectsViewModel @Inject constructor(
         viewModelScope.launch { _teachers.emit(repo.getTeachers()) }
     }
 
-    fun createSubject(name: String, code: String, classId: String?, teacherId: String?) {
+    fun createSubject(name: String, code: String, classId: String?, teacherId: String?, credits: Int) {
         viewModelScope.launch {
             _actionState.emit(Resource.Loading)
-            val result = repo.createSubject(CreateSubjectRequest(name, code, classId, teacherId))
+            val result = repo.createSubject(CreateSubjectRequest(name, code, classId, teacherId, credits))
             _actionState.emit(when (result) {
                 is Resource.Success -> Resource.Success("Subject created successfully")
                 is Resource.Error -> Resource.Error(result.message)
@@ -61,10 +61,10 @@ class AdminSubjectsViewModel @Inject constructor(
         }
     }
 
-    fun updateSubject(id: String, name: String, code: String, classId: String?, teacherId: String?) {
+    fun updateSubject(id: String, name: String, code: String, classId: String?, teacherId: String?, credits: Int) {
         viewModelScope.launch {
             _actionState.emit(Resource.Loading)
-            val result = repo.updateSubject(id, UpdateSubjectRequest(name, code, classId, teacherId))
+            val result = repo.updateSubject(id, UpdateSubjectRequest(name, code, classId, teacherId, credits))
             _actionState.emit(when (result) {
                 is Resource.Success -> Resource.Success("Subject updated successfully")
                 is Resource.Error -> Resource.Error(result.message)

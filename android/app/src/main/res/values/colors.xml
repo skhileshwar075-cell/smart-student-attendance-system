@@ -36,7 +36,9 @@
     <color name="amber_100">#FEF3C7</color>
     <color name="amber_400">#FBBF24</color>
     <color name="amber_500">#F59E0B</color>
+    <color name="orange_50">#FFF7ED</color>
     <color name="orange_500">#F97316</color>
+    <color name="orange_600">#EA580C</color>
 
     <!-- ── Violet / Purple ────────────────────── -->
     <color name="violet_50">#F5F3FF</color>

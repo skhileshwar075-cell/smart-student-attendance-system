@@ -1,8 +1,10 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 const { query } = require('../db/database');
-const { authenticateToken, JWT_SECRET } = require('../middleware/auth');
+const { authenticateToken, requireRole, JWT_SECRET } = require('../middleware/auth');
+const { registerFaceEmbedding, getFaceRegistrationRequired } = require('../services/faceVerificationService');
 const router = express.Router();
 
 router.post('/login', async (req, res) => {
@@ -54,19 +56,91 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.get('/face/status', authenticateToken, async (req, res) => {
+  try {
+    const user = await query(`SELECT face_registered_at, face_encoding IS NOT NULL AS face_registered FROM users WHERE id=$1`, [req.user.id]);
+    if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+    const required = await getFaceRegistrationRequired();
+    res.json({
+      faceRegistered: user.rows[0].face_registered,
+      faceRegisteredAt: user.rows[0].face_registered_at,
+      required,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post('/face/register', authenticateToken, requireRole('student'), async (req, res) => {
+  try {
+    const { face_encoding } = req.body;
+    if (!face_encoding) {
+      return res.status(400).json({ error: 'face_encoding is required for face registration' });
+    }
+
+    const embeddingLength = await registerFaceEmbedding(req.user.id, face_encoding);
+    await query(`INSERT INTO audit_logs (user_id, action, details) VALUES ($1,'face_register',$2)`, [req.user.id, JSON.stringify({ embeddingLength })]);
+    res.json({ message: 'Face registered successfully', embeddingLength });
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ error: err.message || 'Failed to register face' });
+  }
+});
+
 // ── OTP helpers ────────────────────────────────────────────────────────────────
 const crypto = require('crypto');
 const OTP_EXPIRY_MINUTES = 10;
 const MAX_OTP_ATTEMPTS = 5;
+
+// Email transporter configuration
+const emailTransporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: process.env.SMTP_PORT || 587,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 function generateOTP() {
   return String(Math.floor(100000 + crypto.randomInt(900000)));
 }
 
 async function sendOTPEmail(email, otp, name) {
-  // In production: integrate nodemailer / SendGrid / AWS SES here
-  // For demo purposes the OTP is returned in the API response
-  console.log(`\n📧 OTP for ${name} (${email}): ${otp}  [expires in ${OTP_EXPIRY_MINUTES} min]\n`);
+  try {
+    const mailOptions = {
+      from: `"SmartAttend System" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: 'Password Reset OTP - SmartAttend',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Password Reset Request</h2>
+          <p>Hello ${name},</p>
+          <p>You requested a password reset for your SmartAttend account.</p>
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin: 0; color: #007bff;">Your OTP Code: <strong>${otp}</strong></h3>
+            <p style="margin: 10px 0 0 0; color: #666;">This code expires in ${OTP_EXPIRY_MINUTES} minutes.</p>
+          </div>
+          <p>If you didn't request this reset, please ignore this email.</p>
+          <p>Best regards,<br>SmartAttend Team</p>
+        </div>
+      `,
+    };
+
+    await emailTransporter.sendMail(mailOptions);
+    console.log(`OTP email sent successfully to ${email}`);
+  } catch (error) {
+    console.error('Failed to send OTP email:', error);
+    // Fallback to console logging in development
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`\n📧 OTP for ${name} (${email}): ${otp}  [expires in ${OTP_EXPIRY_MINUTES} min]\n`);
+    } else {
+      throw error; // In production, fail if email can't be sent
+    }
+  }
 }
 
 // POST /api/auth/forgot-password
@@ -107,15 +181,11 @@ router.post('/forgot-password', async (req, res) => {
     await query(`INSERT INTO audit_logs (user_id, action, details) VALUES ($1,'forgot_password',$2)`,
       [user.id, JSON.stringify({ email: user.email })]);
 
-    // In demo mode return OTP so the flow can be tested without SMTP
-    const isDev = process.env.NODE_ENV !== 'production';
     res.json({
       message: `OTP sent to ${user.email.replace(/(.{2}).+(@.+)/, '$1***$2')}`,
       email_masked: user.email.replace(/(.{2}).+(@.+)/, '$1***$2'),
       name: user.name,
       role: user.role,
-      // Dev helper — remove in production
-      ...(isDev && { dev_otp: otp, dev_note: 'OTP shown only in development mode' }),
     });
   } catch (err) {
     console.error(err);

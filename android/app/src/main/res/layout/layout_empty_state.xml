@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/emptyStateRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="32dp"
+    android:visibility="gone">
+
+    <ImageView
+        android:id="@+id/ivEmptyIllustration"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:src="@drawable/ic_graduation_cap"
+        app:tint="@color/gray_200"
+        android:alpha="0.5" />
+
+    <TextView
+        android:id="@+id/tvEmptyTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="No data found"
+        android:textColor="@color/gray_900"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvEmptyMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center"
+        android:text="Try adjusting your filters or refresh the page."
+        android:textColor="@color/gray_500"
+        android:textSize="14sp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnRetry"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Retry"
+        android:textColor="@color/brand_primary"
+        android:visibility="gone" />
+
+</LinearLayout>

@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -31,14 +32,14 @@ class AttendanceHistoryAdapter : ListAdapter<AttendanceRecord, AttendanceHistory
         holder.tvMethod.text = item.method?.uppercase() ?: "—"
 
         val (bgColor, textColor) = when (item.status.lowercase()) {
-            "present" -> "#DCFCE7" to "#166534"
-            "absent"  -> "#FEE2E2" to "#991B1B"
-            "late"    -> "#FEF9C3" to "#713F12"
-            else      -> "#F3F4F6" to "#374151"
+            "present" -> R.color.present_bg to R.color.present_text
+            "absent"  -> R.color.absent_bg to R.color.absent_text
+            "late"    -> R.color.late_bg to R.color.late_text
+            else      -> R.color.gray_100 to R.color.gray_700
         }
         val ctx = holder.itemView.context
-        holder.tvStatus.setBackgroundColor(Color.parseColor(bgColor))
-        holder.tvStatus.setTextColor(Color.parseColor(textColor))
+        holder.tvStatus.setBackgroundResource(bgColor)
+        holder.tvStatus.setTextColor(ContextCompat.getColor(ctx, textColor))
     }
 
     companion object {

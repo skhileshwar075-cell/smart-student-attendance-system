@@ -44,6 +44,8 @@ class StudentRequestsFragment : Fragment() {
         binding.btnSubmitRequest.setOnClickListener { submitRequest() }
         binding.btnToggleForm.setOnClickListener { toggleForm() }
 
+        binding.emptyState.btnRetry.setOnClickListener { viewModel.loadRequests() }
+
         setupObservers()
     }
 
@@ -91,18 +93,27 @@ class StudentRequestsFragment : Fragment() {
                 when (state) {
                     is Resource.Loading -> {
                         binding.swipeRefresh.isRefreshing = true
-                        binding.tvEmpty.visibility = View.GONE
+                        binding.emptyState.emptyStateRoot.visibility = View.GONE
                     }
                     is Resource.Success -> {
                         binding.swipeRefresh.isRefreshing = false
                         val list = state.data.requests
                         requestsAdapter.submitList(list)
-                        binding.tvEmpty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
+                        if (list.isEmpty()) {
+                            binding.emptyState.emptyStateRoot.visibility = View.VISIBLE
+                            binding.emptyState.tvEmptyTitle.text = "No Requests"
+                            binding.emptyState.tvEmptyMessage.text = "You haven't submitted any attendance requests yet."
+                            binding.emptyState.btnRetry.visibility = View.GONE
+                        } else {
+                            binding.emptyState.emptyStateRoot.visibility = View.GONE
+                        }
                     }
                     is Resource.Error -> {
                         binding.swipeRefresh.isRefreshing = false
-                        binding.tvEmpty.visibility = View.VISIBLE
-                        binding.tvEmpty.text = state.message
+                        binding.emptyState.emptyStateRoot.visibility = View.VISIBLE
+                        binding.emptyState.tvEmptyTitle.text = "Error Loading Requests"
+                        binding.emptyState.tvEmptyMessage.text = state.message
+                        binding.emptyState.btnRetry.visibility = View.VISIBLE
                     }
                 }
             }
