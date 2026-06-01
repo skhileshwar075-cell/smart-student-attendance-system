@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../../api.js';
 import { Search, User, Mail, Phone, Plus, Edit2, Trash2, X, BookOpen, CheckCircle, Copy, Hash, Lock, Calendar } from 'lucide-react';
 import { InputField, PasswordField } from '../../components/FormFields';
 

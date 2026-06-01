@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../../api.js';
 import { MapPin, Hash, Wifi, CheckCircle, Clock, AlertCircle, Shield, QrCode } from 'lucide-react';
 import { useGeolocation } from '../../hooks/useGeolocation';
 import FaceCapture from '../../components/FaceCapture';

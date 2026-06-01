@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Lock, Mail, User, Hash, BookOpen, Flame, ArrowRight, CheckCircle, GraduationCap } from 'lucide-react';
-import axios from 'axios';
+import axios from '../api.js';
 import { InputField, PasswordField } from '../components/FormFields';
 
 const DEMO = [

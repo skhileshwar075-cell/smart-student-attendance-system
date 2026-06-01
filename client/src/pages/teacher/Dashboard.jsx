@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../../api.js';
 import { useNavigate } from 'react-router-dom';
 import { Users, BookOpen, UserCheck, AlertCircle, TrendingUp, ArrowRight, Activity, Clock } from 'lucide-react';
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import axios from '../../api.js';
 import { useAuth } from '../../context/AuthContext';
 import {
   User, Lock, CheckCircle, Camera, AlertTriangle,

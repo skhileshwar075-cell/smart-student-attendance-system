@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../../api.js';
 import { Bell, CheckCheck, Info, AlertTriangle, CheckCircle } from 'lucide-react';
 
 function NotifIcon({ type }) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../../api.js';
 import { Plus, FileText, CheckCircle, XCircle, Clock, X, AlertCircle } from 'lucide-react';
 
 const STATUS_META = {

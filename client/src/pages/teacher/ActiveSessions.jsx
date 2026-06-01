@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import axios from 'axios';
+import axios from '../../api.js';
 import {
   Clock, StopCircle, RefreshCw, Wifi, Hash, QrCode, Shield,
   CheckCircle, MapPin, Filter, AlertCircle, Activity

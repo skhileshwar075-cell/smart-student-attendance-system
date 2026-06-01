@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../../api.js';
 import { Shield, RefreshCw } from 'lucide-react';
 
 export default function AuditLogs() {

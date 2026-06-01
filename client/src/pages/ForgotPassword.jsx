@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GraduationCap, Mail, Hash, ArrowLeft, KeyRound, CheckCircle, RefreshCw } from 'lucide-react';
-import axios from 'axios';
+import axios from '../api.js';
 import { InputField, PasswordField } from '../components/FormFields';
 
 const STEPS = { IDENTIFY: 1, OTP: 2, NEW_PASSWORD: 3, SUCCESS: 4 };

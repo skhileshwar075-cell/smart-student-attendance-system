@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import axios from '../api.js';
 import {
   Bell, CheckCheck, Trash2, RefreshCw,
   Calendar, MessageSquare, AlertTriangle, Settings, Info, CheckCircle
