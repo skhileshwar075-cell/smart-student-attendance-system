@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from '../../api.js';
 import {
   CheckCircle, XCircle, Play, Square, Hash, MapPin,
@@ -76,9 +77,10 @@ function SessionCard({ session, onStop, stopping, now }) {
 }
 
 export default function TakeAttendance() {
+  const [searchParams] = useSearchParams();
   const [subjects, setSubjects] = useState([]);
   const [students, setStudents] = useState([]);
-  const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState(() => searchParams.get('subject_id') || '');
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
   const [records, setRecords] = useState({});
   const [saving, setSaving] = useState(false);
@@ -130,6 +132,13 @@ export default function TakeAttendance() {
     pollRef.current = setInterval(() => fetchSessions(true), 15000);
     return () => clearInterval(pollRef.current);
   }, [fetchSessions]);
+
+  useEffect(() => {
+    const subjectFromUrl = searchParams.get('subject_id') || '';
+    if (subjectFromUrl && subjectFromUrl !== selectedSubject) {
+      setSelectedSubject(subjectFromUrl);
+    }
+  }, [searchParams, selectedSubject]);
 
   useEffect(() => {
     if (selectedSubject) {

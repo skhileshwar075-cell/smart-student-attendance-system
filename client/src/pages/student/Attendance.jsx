@@ -278,30 +278,30 @@ export default function StudentAttendance() {
         </div>
       </div>
 
-      {/* Day popover / bottom sheet for mobile */}
+      {/* Day popover / detail modal */}
       {openDay && (
-        <div>
-          <div className="fixed inset-0 bg-black/40 z-40" onClick={closeDayPopover} />
-          <div className="fixed left-0 right-0 bottom-0 z-50 bg-white rounded-t-xl shadow-lg max-h-[60vh] overflow-auto">
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-3">
+        <div className="fixed inset-0 z-40 flex items-end md:items-center justify-center">
+          <button type="button" className="absolute inset-0 bg-black/40" onClick={closeDayPopover} />
+          <div className="relative w-full md:max-w-2xl bg-white rounded-t-xl shadow-lg max-h-[60vh] overflow-auto md:rounded-3xl md:max-h-[80vh]">
+            <div className="p-4 md:p-6">
+              <div className="flex items-start justify-between gap-4 mb-3">
                 <div>
-                  <h4 className="font-semibold">{openDay}</h4>
-                  <p className="text-xs text-gray-500">Tap a subject for status details</p>
+                  <h4 className="text-lg font-semibold text-gray-900">{openDay}</h4>
+                  <p className="text-sm text-gray-500">Tap a subject for attendance details</p>
                 </div>
-                <button onClick={closeDayPopover} className="text-sm text-gray-500">Close</button>
+                <button onClick={closeDayPopover} className="rounded-full border border-gray-200 px-3 py-1 text-sm text-gray-600 hover:bg-gray-50">Close</button>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 md:space-y-3 px-0 md:px-1">
                 {(dayGroups[openDay] || []).map((it, idx) => (
-                  <div key={`${openDay}-${idx}`} className="flex items-center justify-between p-3 rounded-lg border bg-gray-50">
+                  <div key={`${openDay}-${idx}`} className="flex items-center justify-between gap-4 p-3 rounded-2xl border border-gray-200 bg-gray-50">
                     <div className="flex items-center gap-3">
-                      <span className={`inline-block w-2.5 h-2.5 rounded-full ${statusDot(it.status)}`} />
+                      <span className={`inline-block w-3 h-3 rounded-full ${statusDot(it.status)}`} />
                       <div>
-                        <div className="text-sm font-medium">{it.subject}</div>
+                        <div className="text-sm font-medium text-gray-900">{it.subject}</div>
                         <div className="text-xs text-gray-500">{it.method ? it.method : it.status}</div>
                       </div>
                     </div>
-                    <span className="text-xs text-gray-500">{statusLabel(it.status)}</span>
+                    <span className="text-xs uppercase tracking-[0.18em] text-gray-500">{statusLabel(it.status)}</span>
                   </div>
                 ))}
                 {(!dayGroups[openDay] || dayGroups[openDay].length === 0) && (

@@ -124,6 +124,87 @@ router.get('/dashboard', async (req, res) => {
   }
 });
 
+router.get('/dashboard/students', async (req, res) => {
+  try {
+    const teacherId = await getTeacherId(req.user.id);
+    const { category, class_id, subject_id } = req.query;
+
+    if (!category || !['present', 'absent', 'holiday'].includes(category)) {
+      return res.status(400).json({ error: 'Invalid category' });
+    }
+
+    let sql, params = [teacherId];
+
+    // Build base query for all categories
+    const baseSelect = `
+      SELECT s.id as student_id,
+             s.student_id,
+             u.name as student_name,
+             c.name as class_name,
+             c.section
+      FROM students s
+      JOIN users u ON u.id=s.user_id
+      JOIN classes c ON c.id=s.class_id
+      WHERE s.is_deleted=false
+        AND c.id IN (SELECT DISTINCT class_id FROM subjects WHERE teacher_id=$1)
+    `;
+
+    if (category === 'present') {
+      sql = `
+        SELECT DISTINCT s.id as student_id, s.student_id, u.name as student_name, c.name as class_name, c.section
+        FROM students s
+        JOIN users u ON u.id=s.user_id
+        JOIN classes c ON c.id=s.class_id
+        JOIN attendance a ON a.student_id=s.id AND a.date=CURRENT_DATE AND a.status='present'
+        WHERE s.is_deleted=false
+          AND c.id IN (SELECT DISTINCT class_id FROM subjects WHERE teacher_id=$1)
+      `;
+    } else if (category === 'holiday') {
+      sql = `
+        SELECT DISTINCT s.id as student_id, s.student_id, u.name as student_name, c.name as class_name, c.section
+        FROM students s
+        JOIN users u ON u.id=s.user_id
+        JOIN classes c ON c.id=s.class_id
+        JOIN attendance a ON a.student_id=s.id AND a.date=CURRENT_DATE AND a.status='holiday'
+        WHERE s.is_deleted=false
+          AND c.id IN (SELECT DISTINCT class_id FROM subjects WHERE teacher_id=$1)
+      `;
+    } else {
+      // Absent = enrolled in classes taught by this teacher but NOT marked present or holiday today
+      sql = `
+        SELECT s.id as student_id, s.student_id, u.name as student_name, c.name as class_name, c.section
+        FROM students s
+        JOIN users u ON u.id=s.user_id
+        JOIN classes c ON c.id=s.class_id
+        WHERE s.is_deleted=false
+          AND c.id IN (SELECT DISTINCT class_id FROM subjects WHERE teacher_id=$1)
+          AND s.id NOT IN (
+            SELECT DISTINCT student_id FROM attendance
+            WHERE date=CURRENT_DATE AND status IN ('present', 'holiday')
+          )
+      `;
+    }
+
+    // Apply optional filters
+    if (class_id) {
+      sql += ` AND c.id=$${params.length + 1}`;
+      params.push(class_id);
+    }
+
+    if (subject_id) {
+      sql += ` AND s.class_id IN (SELECT class_id FROM subjects WHERE id=$${params.length + 1})`;
+      params.push(subject_id);
+    }
+
+    sql += ` ORDER BY u.name`;
+    const result = await query(sql, params);
+    res.json({ students: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.get('/subjects', async (req, res) => {
   try {
     const teacherId = await getTeacherId(req.user.id);
