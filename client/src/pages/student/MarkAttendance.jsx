@@ -77,6 +77,23 @@ export default function MarkAttendance() {
     setShowQrScanner(false);
   };
 
+  const getSessionTokenForMark = (markData) => {
+    if (markData.type === 'session') {
+      return markData.session?.session_type === 'secure'
+        ? markData.session?.session_token || null
+        : null;
+    }
+
+    if (markData.type === 'code') {
+      const secureSession = sessions.find(
+        (s) => s.session_type === 'secure' && s.code?.toUpperCase() === markData.code?.toUpperCase(),
+      );
+      return secureSession?.session_token || null;
+    }
+
+    return null;
+  };
+
   const handleFaceVerified = async (verified, embedding) => {
     setFaceVerified(verified);
     setFaceEmbedding(embedding || null);
@@ -102,6 +119,9 @@ export default function MarkAttendance() {
       if (embedding) payload.face_embedding = embedding;
       if (markData.type === 'session') payload.session_id = markData.session?.id || markData.sessionId;
       else { payload.code = markData.code; setCode(''); }
+
+      const sessionToken = getSessionTokenForMark(markData);
+      if (sessionToken) payload.session_token = sessionToken;
 
       await axios.post('/api/student/attendance/mark', payload);
       setMessage({ type: 'success', text: `Attendance marked!${faceVerifiedStatus ? ' (Face verified ✓)' : ''}` });
