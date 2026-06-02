@@ -60,7 +60,11 @@ export default function StudentAttendance() {
     const params = { from: toLocalYMD(firstDay), to: toLocalYMD(lastDay), limit: 1000, offset: 0 };
     if (filters.subject_id) params.subject_id = filters.subject_id;
     const r = await axios.get('/api/student/attendance', { params });
-    setCalendarRecords(r.data.records || []);
+    const recs = (r.data.records || []).map(rec => ({
+      ...rec,
+      ymd: (rec.date || '').split('T')[0].slice(0, 10)
+    }));
+    setCalendarRecords(recs);
   };
 
   const pagePresentCount = records.filter(r => r.status === 'present').length;
@@ -76,8 +80,9 @@ export default function StudentAttendance() {
   const pctBg        = pct >= 75 ? 'bg-emerald-50 border-emerald-100' : pct >= 60 ? 'bg-amber-50 border-amber-100' : 'bg-red-50 border-red-100';
 
   const monthRecords = calendarRecords.reduce((map, record) => {
-    const dateKey = record.date?.slice(0, 10);
-    if (!dateKey) return map;
+    if (!record?.date) return map;
+    // Normalize record.date to local YYYY-MM-DD to match list rendering
+    const dateKey = toLocalYMD(new Date(record.date));
     const priority = { holiday: 3, absent: 2, late: 2, excused: 2, present: 1 };
     const existing = map[dateKey];
     if (!existing || priority[record.status] > priority[existing]) {
