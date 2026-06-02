@@ -14,6 +14,7 @@ export default function StudentAttendance() {
   const [limit, setLimit]       = useState(30);
   const [total, setTotal]       = useState(0);
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
+  const [openDay, setOpenDay] = useState(null);
 
   useEffect(() => {
     axios.get('/api/student/subjects').then(r => setSubjects(r.data.subjects || []));
@@ -39,6 +40,17 @@ export default function StudentAttendance() {
     return `${year}-${month}-${day}`;
   };
 
+  // Parse date strings into a Date using local date for YYYY-MM-DD inputs
+  const parseToLocalDate = (dateStr) => {
+    if (!dateStr) return new Date();
+    const ymdOnly = /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
+    if (ymdOnly) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+    return new Date(dateStr);
+  };
+
   const fetchRecords = async (f = filters, pageIndex = page, query = search) => {
     setLoading(true);
     const params = { limit, offset: pageIndex * limit };
@@ -47,7 +59,7 @@ export default function StudentAttendance() {
     if (f.to)         params.to   = f.to;
     if (query)        params.search = query;
     const r = await axios.get('/api/student/attendance', { params });
-    setRecords(r.data.records || []);
+    setRecords((r.data.records || []).map(rec => ({ ...rec, ymd: toLocalYMD(parseToLocalDate(rec.date || rec.ymd)) })));
     setTotal(r.data.total || 0);
     setLimit(r.data.limit || limit);
     setPage(r.data.offset ? Math.floor(r.data.offset / (r.data.limit || limit)) : pageIndex);
@@ -62,7 +74,7 @@ export default function StudentAttendance() {
     const r = await axios.get('/api/student/attendance', { params });
     const recs = (r.data.records || []).map(rec => ({
       ...rec,
-      ymd: (rec.date || '').split('T')[0].slice(0, 10)
+      ymd: toLocalYMD(parseToLocalDate(rec.date || rec.ymd))
     }));
     setCalendarRecords(recs);
   };
@@ -80,9 +92,9 @@ export default function StudentAttendance() {
   const pctBg        = pct >= 75 ? 'bg-emerald-50 border-emerald-100' : pct >= 60 ? 'bg-amber-50 border-amber-100' : 'bg-red-50 border-red-100';
 
   const monthRecords = calendarRecords.reduce((map, record) => {
-    if (!record?.date) return map;
-    // Normalize record.date to local YYYY-MM-DD to match list rendering
-    const dateKey = toLocalYMD(new Date(record.date));
+    if (!record?.date && !record?.ymd) return map;
+    // Normalize record.date/ymd to local YYYY-MM-DD to match list rendering
+    const dateKey = toLocalYMD(parseToLocalDate(record.date || record.ymd));
     const priority = { holiday: 3, absent: 2, late: 2, excused: 2, present: 1 };
     const existing = map[dateKey];
     if (!existing || priority[record.status] > priority[existing]) {
@@ -91,9 +103,31 @@ export default function StudentAttendance() {
     return map;
   }, {});
 
+  // Group full records per day (for multi-subject days)
+  const dayGroups = calendarRecords.reduce((map, record) => {
+    const key = record?.ymd || toLocalYMD(parseToLocalDate(record.date));
+    if (!key) return map;
+    if (!map[key]) map[key] = [];
+    map[key].push({ subject: record.subject_name || record.subject || 'Subject', status: record.status, method: record.method });
+    return map;
+  }, {});
+
+  const statusDot = status => {
+    if (status === 'present') return 'bg-emerald-600';
+    if (status === 'holiday') return 'bg-amber-600';
+    if (status === 'absent' || status === 'late' || status === 'excused') return 'bg-red-600';
+    return 'bg-gray-400';
+  };
+
+  const openDayPopover = (ymd) => setOpenDay(ymd);
+  const closeDayPopover = () => setOpenDay(null);
+
   const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
   const monthName = monthStart.toLocaleString('default', { month: 'long' });
   const year = monthStart.getFullYear();
+  const selectedSubjectName = filters.subject_id
+    ? (subjects.find(s => String(s.id) === String(filters.subject_id))?.name || 'Subject')
+    : 'All Subjects';
   const startDay = monthStart.getDay();
   const daysInMonth = new Date(year, currentMonth.getMonth() + 1, 0).getDate();
   const totalCells = startDay + daysInMonth;
@@ -174,6 +208,7 @@ export default function StudentAttendance() {
           <div>
             <p className="text-xs uppercase tracking-wider text-gray-500">Attendance Calendar</p>
             <h3 className="text-lg font-semibold text-gray-900">{monthName} {year}</h3>
+            <p className="text-sm text-gray-500 mt-0.5">{selectedSubjectName}</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -194,26 +229,36 @@ export default function StudentAttendance() {
               ))}
             </div>
             <div className="grid grid-cols-7 gap-2">
-              {calendarCells.map((cell, index) => (
-                <div
-                  key={`${cell?.dateKey || 'blank'}-${index}`}
-                  className={`min-h-[72px] rounded-2xl border p-2 text-left ${cell ? statusClass(cell.status) : 'bg-gray-50 border-gray-100'}`}
-                >
-                  {cell ? (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-gray-800">{cell.day}</span>
-                        {cell.status && (
-                          <span className="text-[10px] uppercase tracking-[0.18em] font-semibold">
-                            {cell.status === 'present' ? 'P' : cell.status === 'holiday' ? 'H' : 'A'}
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-2 text-[11px] text-gray-600">{statusLabel(cell.status)}</p>
-                    </>
-                  ) : null}
-                </div>
-              ))}
+              {calendarCells.map((cell, index) => {
+                const items = cell ? (dayGroups[cell.dateKey] || []) : [];
+                return (
+                  <div
+                    key={`${cell?.dateKey || 'blank'}-${index}`}
+                    onClick={() => cell && items.length > 0 && openDayPopover(cell.dateKey)}
+                    className={`min-h-[72px] rounded-2xl border p-1 md:p-2 text-left ${cell ? statusClass(cell.status) : 'bg-gray-50 border-gray-100'} ${items.length ? 'cursor-pointer hover:shadow-sm' : ''}`}
+                  >
+                    {cell ? (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-gray-800">{cell.day}</span>
+                          {cell.status && (
+                            <span className="text-[10px] uppercase tracking-[0.18em] font-semibold">
+                              {cell.status === 'present' ? 'P' : cell.status === 'holiday' ? 'H' : 'A'}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-3 flex flex-col items-center gap-2">
+                          <div className={`flex items-center justify-center w-10 h-10 rounded-full border text-sm font-semibold ${cell.status === 'present' ? 'border-emerald-300 bg-emerald-100 text-emerald-800' : cell.status === 'holiday' ? 'border-amber-300 bg-amber-100 text-amber-800' : cell.status ? 'border-red-300 bg-red-100 text-red-800' : 'border-gray-200 bg-gray-100 text-gray-500'}`}>
+                            {items.length}
+                          </div>
+                          <p className="hidden md:block text-[11px] text-center text-gray-600">Tap to view {items.length} subject{items.length > 1 ? 's' : ''}</p>
+                        </div>
+                        <p className="hidden md:block mt-2 text-[11px] text-gray-600">{statusLabel(cell.status)}</p>
+                      </>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -232,6 +277,41 @@ export default function StudentAttendance() {
           </div>
         </div>
       </div>
+
+      {/* Day popover / bottom sheet for mobile */}
+      {openDay && (
+        <div>
+          <div className="fixed inset-0 bg-black/40 z-40" onClick={closeDayPopover} />
+          <div className="fixed left-0 right-0 bottom-0 z-50 bg-white rounded-t-xl shadow-lg max-h-[60vh] overflow-auto">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h4 className="font-semibold">{openDay}</h4>
+                  <p className="text-xs text-gray-500">Tap a subject for status details</p>
+                </div>
+                <button onClick={closeDayPopover} className="text-sm text-gray-500">Close</button>
+              </div>
+              <div className="space-y-2">
+                {(dayGroups[openDay] || []).map((it, idx) => (
+                  <div key={`${openDay}-${idx}`} className="flex items-center justify-between p-3 rounded-lg border bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <span className={`inline-block w-2.5 h-2.5 rounded-full ${statusDot(it.status)}`} />
+                      <div>
+                        <div className="text-sm font-medium">{it.subject}</div>
+                        <div className="text-xs text-gray-500">{it.method ? it.method : it.status}</div>
+                      </div>
+                    </div>
+                    <span className="text-xs text-gray-500">{statusLabel(it.status)}</span>
+                  </div>
+                ))}
+                {(!dayGroups[openDay] || dayGroups[openDay].length === 0) && (
+                  <div className="text-sm text-gray-500">No records for this day.</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Filters ───────────────────────────────────────────── */}
       <div className="card">
