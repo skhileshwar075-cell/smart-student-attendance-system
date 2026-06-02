@@ -272,9 +272,29 @@ router.post('/branches', async (req, res) => {
   try {
     const { name, code } = req.body;
     const result = await query(`INSERT INTO branches (name, code) VALUES ($1,$2) RETURNING *`, [name, code]);
-    res.status(201).json(result.rows[0]);
+    res.status(201).json({ branch: result.rows[0], message: 'Branch created' });
   } catch (err) {
     if (err.code === '23505') return res.status(400).json({ error: 'Branch code already exists' });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.put('/branches/:id', async (req, res) => {
+  try {
+    const { name, code } = req.body;
+    await query(`UPDATE branches SET name=$1, code=$2 WHERE id=$3`, [name, code, req.params.id]);
+    res.json({ message: 'Branch updated' });
+  } catch (err) {
+    if (err.code === '23505') return res.status(400).json({ error: 'Branch code already exists' });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.delete('/branches/:id', async (req, res) => {
+  try {
+    await query(`DELETE FROM branches WHERE id=$1`, [req.params.id]);
+    res.json({ message: 'Branch deleted' });
+  } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });

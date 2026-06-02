@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from '../../api.js';
 import { Search, Plus, Edit2, Trash2, X, User, Mail, Phone, Hash, Lock } from 'lucide-react';
 import { InputField, PasswordField } from '../../components/FormFields';
+import Toast from '../../components/Toast';
 
 export default function ManageStudents() {
   const [students, setStudents] = useState([]);
@@ -12,6 +13,7 @@ export default function ManageStudents() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', student_id: '', class_id: '', roll_number: '', password: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState(null);
   const [total, setTotal] = useState(0);
   const [showPwd, setShowPwd] = useState(false);
 
@@ -40,26 +42,46 @@ export default function ManageStudents() {
     }
   };
 
+  const showToast = (msg, type = 'success') => {
+    setToast({ message: msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
   const save = async (e) => {
     e.preventDefault(); setSaving(true); setError('');
     try {
-      if (modal.type === 'add') await axios.post('/api/admin/students', form);
-      else await axios.put(`/api/admin/students/${modal.id}`, form);
+      if (modal.type === 'add') {
+        await axios.post('/api/admin/students', form);
+        showToast('Student added successfully', 'success');
+      } else {
+        await axios.put(`/api/admin/students/${modal.id}`, form);
+        showToast('Student updated successfully', 'success');
+      }
       setModal(null); fetchStudents(search);
-    } catch (err) { setError(err.response?.data?.error || 'Failed'); }
-    finally { setSaving(false); }
+    } catch (err) {
+      const message = err.response?.data?.error || 'Failed';
+      setError(message);
+      showToast(message, 'error');
+    } finally { setSaving(false); }
   };
 
   const del = async (id) => {
     if (!confirm('Deactivate this student?')) return;
-    await axios.delete(`/api/admin/students/${id}`);
-    fetchStudents(search);
+    try {
+      await axios.delete(`/api/admin/students/${id}`);
+      showToast('Student deactivated', 'success');
+      fetchStudents(search);
+    } catch (err) {
+      const message = err.response?.data?.error || 'Delete failed';
+      showToast(message, 'error');
+    }
   };
 
   const handleSearch = (e) => { setSearch(e.target.value); fetchStudents(e.target.value); };
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
+      {toast && <Toast message={toast.message} type={toast.type} />}
       {modal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-5 max-h-[90vh] overflow-y-auto">

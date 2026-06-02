@@ -32,6 +32,13 @@ export default function StudentAttendance() {
     fetchCalendarRecords();
   }, [currentMonth, filters.subject_id]);
 
+  const toLocalYMD = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const fetchRecords = async (f = filters, pageIndex = page, query = search) => {
     setLoading(true);
     const params = { limit, offset: pageIndex * limit };
@@ -50,7 +57,7 @@ export default function StudentAttendance() {
   const fetchCalendarRecords = async () => {
     const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
     const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-    const params = { from: firstDay.toISOString().slice(0, 10), to: lastDay.toISOString().slice(0, 10), limit: 1000, offset: 0 };
+    const params = { from: toLocalYMD(firstDay), to: toLocalYMD(lastDay), limit: 1000, offset: 0 };
     if (filters.subject_id) params.subject_id = filters.subject_id;
     const r = await axios.get('/api/student/attendance', { params });
     setCalendarRecords(r.data.records || []);
@@ -89,8 +96,8 @@ export default function StudentAttendance() {
   const calendarCells = Array.from({ length: rows * 7 }, (_, idx) => {
     const day = idx - startDay + 1;
     if (day < 1 || day > daysInMonth) return null;
-    const date = new Date(year, currentMonth.getMonth(), day);
-    const key = date.toISOString().slice(0, 10);
+    // Build date key as local YYYY-MM-DD to avoid timezone shifts
+    const key = `${year}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     return {
       day,
       status: monthRecords[key] || null,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from '../../api.js';
 import { Search, Plus, Edit2, Trash2, X } from 'lucide-react';
 import { InputField } from '../../components/FormFields';
+import Toast from '../../components/Toast';
 
 export default function ManageSubjects() {
   const [subjects, setSubjects] = useState([]);
@@ -12,6 +13,8 @@ export default function ManageSubjects() {
   const [form, setForm] = useState({ name: '', code: '', class_id: '', teacher_id: '', credits: 3 });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [deleting, setDeleting] = useState(null);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     axios.get('/api/admin/classes').then(r => setClasses(r.data.classes || []));
@@ -35,11 +38,25 @@ export default function ManageSubjects() {
       if (modal.type === 'add') await axios.post('/api/admin/subjects', form);
       else await axios.put(`/api/admin/subjects/${modal.id}`, form);
       setModal(null); fetchSubjects(search);
+      setToast({ message: modal.type === 'add' ? 'Subject added' : 'Subject updated', type: 'success' });
+      setTimeout(() => setToast(null), 3000);
     } catch (err) { setError(err.response?.data?.error || 'Failed'); }
     finally { setSaving(false); }
   };
 
-  const del = async (id) => { if (!confirm('Delete this subject?')) return; await axios.delete(`/api/admin/subjects/${id}`); fetchSubjects(search); };
+  const del = async (id) => {
+    if (!confirm('Delete this subject?')) return;
+    setDeleting(id);
+    try {
+      await axios.delete(`/api/admin/subjects/${id}`);
+      fetchSubjects(search);
+      setToast({ message: 'Subject deleted', type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+    } catch (err) {
+      setToast({ message: err.response?.data?.error || 'Delete failed', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+    } finally { setDeleting(null); }
+  };
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
@@ -66,6 +83,7 @@ export default function ManageSubjects() {
       </div>
 
       <div className="attendance-card">
+        {toast && <Toast message={toast.message} type={toast.type} />}
         {subjects.length === 0 ? <p className="text-gray-400 text-sm text-center py-8">No subjects found</p>
         : <div className="space-y-2">
           {subjects.map(s => (
@@ -75,9 +93,9 @@ export default function ManageSubjects() {
                 <p className="text-xs text-gray-400 truncate">{s.code} • {s.class_name} {s.section} • {s.teacher_name || 'No teacher'}</p>
                 <p className="text-xs text-gray-400">{s.credits} credits</p>
               </div>
-              <div className="flex shrink-0 gap-1">
+                <div className="flex shrink-0 gap-1">
                 <button onClick={() => openModal(s)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={15} /></button>
-                <button onClick={() => del(s.id)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={15} /></button>
+                <button onClick={() => del(s.id)} disabled={deleting === s.id} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={15} /></button>
               </div>
             </div>
           ))}

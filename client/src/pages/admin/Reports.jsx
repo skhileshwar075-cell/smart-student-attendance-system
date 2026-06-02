@@ -24,7 +24,7 @@ export default function AdminReports() {
     axios.get('/api/admin/academic-sessions').then(r => setSessions(r.data.sessions || []));
   }, []);
 
-  const fetchRecords = async (requestedPage = page) => {
+  const fetchRecords = async (requestedPage = page, searchParam) => {
     setLoading(true);
     const params = { limit, offset: requestedPage * limit };
     if (filters.from) params.from = filters.from;
@@ -33,7 +33,8 @@ export default function AdminReports() {
     if (filters.subject_id) params.subject_id = filters.subject_id;
     if (filters.session) params.session = filters.session;
     if (filters.semester) params.semester = filters.semester;
-    if (search) params.search = search;
+    const q = typeof searchParam !== 'undefined' ? searchParam : search;
+    if (q) params.search = q;
     const r = await axios.get('/api/admin/reports', { params });
     setRecords(r.data.records || []);
     setTotal(r.data.pagination?.total || 0);
@@ -185,7 +186,7 @@ export default function AdminReports() {
       {hasFetched && (
         <div className="attendance-card">
           <div className="flex gap-2 mb-3">
-            <InputField icon={Search} className="flex-1" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} placeholder="Search by student name or ID..." />
+            <InputField icon={Search} className="flex-1" value={search} onChange={e => { const v = e.target.value; setSearch(v); setPage(0); fetchRecords(0, v); }} placeholder="Search by student name or ID..." />
             <button onClick={exportSummaryCSV} title="Download Summary Report" className="btn-secondary px-2 text-xs flex items-center gap-1"><Download size={14} /> Summary</button>
             <button onClick={exportCSV} title="Download Detailed Report" className="btn-secondary px-2 text-xs flex items-center gap-1"><Download size={14} /> Detailed</button>
           </div>

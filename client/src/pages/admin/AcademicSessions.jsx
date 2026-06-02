@@ -4,6 +4,7 @@ import {
   Plus, Edit2, Trash2, X, CheckCircle2, Calendar,
   ArrowUpCircle, RefreshCw, AlertTriangle, Users
 } from 'lucide-react';
+import Toast from '../../components/Toast';
 
 const fmt = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
@@ -233,7 +234,7 @@ export default function AcademicSessions() {
   const [showPromote, setShowPromote] = useState(false);
   const [activating, setActivating] = useState(null);
   const [deleting, setDeleting] = useState(null);
-  const [toast, setToast] = useState('');
+  const [toast, setToast] = useState(null);
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -248,16 +249,20 @@ export default function AcademicSessions() {
 
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
 
-  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+  const showToast = (msg, type = 'success') => {
+    const payload = typeof msg === 'string' ? { message: msg, type } : msg;
+    setToast(payload);
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const activate = async (id) => {
     setActivating(id);
     try {
       const r = await axios.put(`/api/admin/academic-sessions/${id}/activate`);
-      showToast(r.data.message);
+      showToast(r.data.message, 'success');
       fetchSessions();
     } catch (err) {
-      showToast(err.response?.data?.error || 'Failed to activate');
+      showToast(err.response?.data?.error || 'Failed to activate', 'error');
     } finally { setActivating(null); }
   };
 
@@ -267,8 +272,9 @@ export default function AcademicSessions() {
     try {
       await axios.delete(`/api/admin/academic-sessions/${id}`);
       fetchSessions();
+      showToast('Session deleted', 'success');
     } catch (err) {
-      showToast(err.response?.data?.error || 'Delete failed');
+      showToast(err.response?.data?.error || 'Delete failed', 'error');
     } finally { setDeleting(null); }
   };
 
@@ -278,11 +284,7 @@ export default function AcademicSessions() {
     <div className="space-y-5 max-w-3xl mx-auto">
 
       {/* Toast */}
-      {toast && (
-        <div className="fixed top-4 right-4 z-50 bg-gray-900 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">
-          {toast}
-        </div>
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} />}
 
       {/* Header */}
       <div className="flex flex-wrap gap-2 items-center justify-between">

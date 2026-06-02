@@ -149,12 +149,14 @@ router.get('/students', async (req, res) => {
     let sql, params = [teacherId];
 
     if (mine === 'true' || (!subject_id && !class_id)) {
+      // Default: return all students enrolled in classes taught by this teacher
       sql = `SELECT DISTINCT s.*, u.name, u.email, u.phone,
                c.name as class_name, c.section
              FROM students s
              JOIN users u ON u.id=s.user_id
              LEFT JOIN classes c ON c.id=s.class_id
-             WHERE s.created_by=$1 AND s.is_deleted=false`;
+             JOIN subjects sub ON sub.class_id = s.class_id
+             WHERE sub.teacher_id=$1 AND s.is_deleted=false`;
     } else if (subject_id) {
       if (!(await assertTeacherOwnsSubject(teacherId, subject_id))) {
         return res.status(403).json({ error: 'Access denied: subject not assigned to you' });

@@ -136,6 +136,7 @@ export default function Layout({ children }) {
   const meta = roleMeta[user?.role] || roleMeta.student;
   const allItems = groups.flatMap(g => g.items);
   const currentItem = allItems.find(i => i.path === location.pathname);
+  const profilePath = user?.role === 'admin' ? '/admin/profile' : user?.role === 'teacher' ? '/teacher/profile' : '/student/profile';
 
   const handleLogout = () => { logout(); navigate('/'); };
 
@@ -177,20 +178,22 @@ export default function Layout({ children }) {
           </div>
 
           {/* User Profile */}
-          <div className="flex items-center gap-3 bg-white/10 rounded-xl p-3">
-            <div className="w-9 h-9 rounded-xl bg-white/25 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
-              {user?.profile_photo
-                ? <img src={user.profile_photo} alt="" className="w-full h-full object-cover" />
-                : initial}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-white font-semibold text-sm truncate leading-tight">{user?.name}</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <div className={`w-1.5 h-1.5 rounded-full ${meta.dot} animate-pulse`} />
-                <span className="text-white/60 text-xs">{meta.label}</span>
+          <Link to={profilePath} className="block">
+            <div className="flex items-center gap-3 bg-white/10 rounded-xl p-3">
+              <div className="w-9 h-9 rounded-xl bg-white/25 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
+                {user?.profile_photo
+                  ? <img src={user.profile_photo} alt="" className="w-full h-full object-cover" />
+                  : initial}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-semibold text-sm truncate leading-tight">{user?.name}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <div className={`w-1.5 h-1.5 rounded-full ${meta.dot} animate-pulse`} />
+                  <span className="text-white/60 text-xs">{meta.label}</span>
+                </div>
               </div>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Nav */}
@@ -262,11 +265,11 @@ export default function Layout({ children }) {
               <NotificationBell />
 
               {/* Avatar */}
-              <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${meta.gradient} flex items-center justify-center text-white text-sm font-bold overflow-hidden`}>
+              <Link to={profilePath} className={`w-9 h-9 rounded-xl bg-gradient-to-br ${meta.gradient} flex items-center justify-center text-white text-sm font-bold overflow-hidden`}> 
                 {user?.profile_photo
                   ? <img src={user.profile_photo} alt="" className="w-full h-full object-cover" />
                   : initial}
-              </div>
+              </Link>
             </div>
           </div>
         </header>
