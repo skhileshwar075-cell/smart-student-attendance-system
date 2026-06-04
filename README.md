@@ -318,8 +318,8 @@ All final design decisions, implementation, testing, deployment, and project own
 ├── client/                ← React frontend (Vite)
 ├── android/               ← Native Kotlin Android app
 ├── smartAttendance-Android/ ← Optional WebView wrapper app
-├── project_setup.txt      ← Setup instructions
-├── project_documentation.txt ← Detailed system documentation
+├── project_setup.md      ← Setup instructions
+├── project_documentation.md ← Detailed system documentation
 ├── START_STOP_GUIDE.md    ← Running and stopping the app
 ├── Khileshwar_Deck.pdf    ← Project slide deck
 └── android/ANDROID_GUIDE.md ← Android app developer guide
@@ -368,7 +368,7 @@ Student
 aarav@smartattend.edu
 Student@123
 # Documentation
-- `project_setup.txt` — Setup and configuration details
-- `project_documentation.txt` — Architecture, API, and feature overview
+- `project_setup.md` — Setup and configuration details
+- `project_documentation.md` — Architecture, API, and feature overview
 - `START_STOP_GUIDE.md` — Start/stop commands and port troubleshooting
 - `Khileshwar_Deck.pdf` Deck content (10+8 slides)
