@@ -321,6 +321,7 @@ All final design decisions, implementation, testing, deployment, and project own
 ├── project_setup.txt      ← Setup instructions
 ├── project_documentation.txt ← Detailed system documentation
 ├── START_STOP_GUIDE.md    ← Running and stopping the app
+├── Khileshwar_Deck.pdf    ← Project slide deck
 └── android/ANDROID_GUIDE.md ← Android app developer guide
 ```
 
