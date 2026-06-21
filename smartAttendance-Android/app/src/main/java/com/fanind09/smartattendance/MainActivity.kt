@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         // Updated to use the NEW Network IP and Frontend (Vite) port (5173)
-        const val BASE_URL = "http://192.168.163.80:5173"
+        const val BASE_URL = "https://smart-student-attendance-system-ten.vercel.app/"
         private const val PERMISSION_REQUEST_CODE = 1001
     }
 
