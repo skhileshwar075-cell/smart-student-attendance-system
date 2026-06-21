@@ -11,6 +11,10 @@
     <string name="exit_yes">Exit</string>
     <string name="exit_no">Cancel</string>
     <string name="ssl_error">Secure connection failed.</string>
+    <string name="ssl_error_title">Security Warning</string>
+    <string name="ssl_error_message">The security certificate of this site is not trusted. Do you want to continue?</string>
+    <string name="continue_anyway">Continue</string>
+    <string name="cancel">Cancel</string>
     <string name="no_app_to_handle">No app available to open this link.</string>
     <string name="choose_file">Choose file</string>
     <string name="downloading">Downloading…</string>

@@ -28,7 +28,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartAttendance"
         android:hardwareAccelerated="true"
-        android:usesCleartextTraffic="true"
         tools:targetApi="34">
 
         <activity

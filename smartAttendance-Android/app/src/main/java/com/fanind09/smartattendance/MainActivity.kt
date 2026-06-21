@@ -31,6 +31,10 @@ import android.webkit.WebViewClient
 import android.webkit.ConsoleMessage
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import com.fanind09.smartattendance.BuildConfig
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -38,7 +42,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import com.fanind09.smartattendance.databinding.ActivityMainBinding
@@ -81,9 +84,16 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
+            insets
+        }
 
         setupWebView()
         setupSwipeRefresh()
@@ -116,18 +126,21 @@ class MainActivity : AppCompatActivity() {
             setSupportZoom(true)
             builtInZoomControls = true
             displayZoomControls = false
-            allowFileAccess = true
-            allowContentAccess = true
+            allowFileAccess = false
+            allowContentAccess = false
             setGeolocationEnabled(true)
             javaScriptCanOpenWindowsAutomatically = true
             setSupportMultipleWindows(false)
             mediaPlaybackRequiresUserGesture = false
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-            userAgentString = "$userAgentString SmartAttendanceAndroid/1.0"
+            userAgentString = "$userAgentString SmartAttendanceAndroid/${BuildConfig.VERSION_NAME}"
         }
 
         if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
-            WebSettingsCompat.setAlgorithmicDarkeningAllowed(wv.settings, true)
+            WebSettingsCompat.setAlgorithmicDarkeningAllowed(wv.settings, false)
+        } else if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+            @Suppress("DEPRECATION")
+            WebSettingsCompat.setForceDark(wv.settings, WebSettingsCompat.FORCE_DARK_OFF)
         }
 
         CookieManager.getInstance().apply {
@@ -180,11 +193,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadStartUrl() {
         if (isOnline()) {
-            val url = if (Build.PRODUCT.contains("sdk") || Build.MODEL.contains("Emulator")) {
-                // For emulator, replace the PC's IP with 10.0.2.2
+            val url = if (BuildConfig.DEBUG && (Build.PRODUCT.contains("sdk") || Build.MODEL.contains("Emulator"))) {
+                // For emulator, replace the PC's IP with 10.0.2.2 if developing locally
                 val uri = Uri.parse(BASE_URL)
-                val newUri = uri.buildUpon().encodedAuthority("10.0.2.2:${uri.port}").build()
-                newUri.toString()
+                if (uri.host?.startsWith("10.") == true || uri.host == "localhost") {
+                    uri.buildUpon().encodedAuthority("10.0.2.2:${uri.port}").build().toString()
+                } else {
+                    BASE_URL
+                }
             } else {
                 BASE_URL
             }
@@ -308,8 +324,19 @@ class MainActivity : AppCompatActivity() {
             handler: SslErrorHandler?,
             error: SslError?
         ) {
-            // Allow self-signed certificates for local development
-            handler?.proceed()
+            val builder = AlertDialog.Builder(this@MainActivity)
+            builder.setTitle(R.string.ssl_error_title)
+            builder.setMessage(R.string.ssl_error_message)
+            builder.setPositiveButton(R.string.continue_anyway) { _, _ -> handler?.proceed() }
+            builder.setNegativeButton(R.string.cancel) { _, _ -> handler?.cancel() }
+            
+            // Only allow proceeding in DEBUG builds, or show warning in production
+            if (BuildConfig.DEBUG) {
+                builder.show()
+            } else {
+                handler?.cancel()
+                Toast.makeText(this@MainActivity, R.string.ssl_error, Toast.LENGTH_LONG).show()
+            }
         }
     }
 
@@ -330,8 +357,10 @@ class MainActivity : AppCompatActivity() {
 
     private inner class AppWebChromeClient : WebChromeClient() {
         override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
-            consoleMessage?.let {
-                android.util.Log.d("WebViewConsole", "${it.message()} -- From line ${it.lineNumber()} of ${it.sourceId()}")
+            if (BuildConfig.DEBUG) {
+                consoleMessage?.let {
+                    Log.d("WebViewConsole", "${it.message()} -- From line ${it.lineNumber()} of ${it.sourceId()}")
+                }
             }
             return true
         }
@@ -378,15 +407,20 @@ class MainActivity : AppCompatActivity() {
             origin: String?,
             callback: android.webkit.GeolocationPermissions.Callback?
         ) {
-            val permission = Manifest.permission.ACCESS_FINE_LOCATION
-            if (ContextCompat.checkSelfPermission(this@MainActivity, permission)
-                != PackageManager.PERMISSION_GRANTED
-            ) {
+            val permissions = arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+            val missing = permissions.filter {
+                ContextCompat.checkSelfPermission(this@MainActivity, it) != PackageManager.PERMISSION_GRANTED
+            }
+
+            if (missing.isNotEmpty()) {
                 geolocationOrigin = origin
                 geolocationCallback = callback
                 ActivityCompat.requestPermissions(
                     this@MainActivity,
-                    arrayOf(permission),
+                    missing.toTypedArray(),
                     PERMISSION_REQUEST_CODE
                 )
             } else {
@@ -433,9 +467,6 @@ class MainActivity : AppCompatActivity() {
             this, Manifest.permission.CAMERA
         ) == PackageManager.PERMISSION_GRANTED
         if (!cameraGranted) {
-            ActivityCompat.requestPermissions(
-                this, arrayOf(Manifest.permission.CAMERA), PERMISSION_REQUEST_CODE
-            )
             return null
         }
         return try {
@@ -524,23 +555,37 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_CODE) {
-            val isGranted = grantResults.isNotEmpty() &&
+            val anyGranted = grantResults.isNotEmpty() &&
+                    grantResults.any { it == PackageManager.PERMISSION_GRANTED }
+            
+            // For general requests like Camera/Mic, we check if all requested were granted
+            val allGranted = grantResults.isNotEmpty() &&
                     grantResults.all { it == PackageManager.PERMISSION_GRANTED }
 
-            // Handle pending WebView PermissionRequest
-            pendingPermissionRequest?.let {
-                if (isGranted) it.grant(it.resources) else it.deny()
+            // Handle pending WebView PermissionRequest (Camera/Microphone)
+            pendingPermissionRequest?.let { request ->
+                if (allGranted) {
+                    request.grant(request.resources)
+                } else {
+                    request.deny()
+                }
                 pendingPermissionRequest = null
             }
 
             // Handle pending Geolocation permission
-            geolocationCallback?.let {
-                it.invoke(geolocationOrigin, isGranted, false)
+            // For Geolocation, we allow it if at least one (Coarse or Fine) is granted
+            geolocationCallback?.let { callback ->
+                val locationGranted = permissions.indices.any { i ->
+                    (permissions[i] == Manifest.permission.ACCESS_FINE_LOCATION ||
+                     permissions[i] == Manifest.permission.ACCESS_COARSE_LOCATION) &&
+                    grantResults[i] == PackageManager.PERMISSION_GRANTED
+                }
+                callback.invoke(geolocationOrigin, locationGranted, false)
                 geolocationCallback = null
                 geolocationOrigin = null
             }
 
-            if (!isGranted) {
+            if (!anyGranted && permissions.isNotEmpty() && permissions[0] != Manifest.permission.POST_NOTIFICATIONS) {
                 Toast.makeText(this, R.string.permission_denied, Toast.LENGTH_SHORT).show()
             }
         }
