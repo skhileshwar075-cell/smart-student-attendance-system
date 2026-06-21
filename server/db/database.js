@@ -216,70 +216,25 @@ async function initDB() {
       created_at TIMESTAMP DEFAULT NOW()
     );
 
+    -- 🛠️ FIXED: Added the missing attendance_attempts table
+    CREATE TABLE IF NOT EXISTS attendance_attempts (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      student_id UUID REFERENCES students(id) ON DELETE CASCADE,
+      session_id UUID REFERENCES attendance_sessions(id) ON DELETE CASCADE,
+      status VARCHAR(50),
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+
     -- Ensure the attendance status check constraint allows all current statuses, including holiday.
     ALTER TABLE attendance DROP CONSTRAINT IF EXISTS attendance_status_check;
     ALTER TABLE attendance ADD CONSTRAINT attendance_status_check CHECK (status IN ('present','absent','late','excused','holiday'));
-    ALTER TABLE users ADD COLUMN IF NOT EXISTS face_registered_at TIMESTAMP;
-    ALTER TABLE attendance_attempts ADD COLUMN IF NOT EXISTS face_match BOOLEAN DEFAULT false;
-    ALTER TABLE attendance_attempts ADD COLUMN IF NOT EXISTS face_confidence DECIMAL(5,4);
+    `);
 
-    -- Add indexes to support attendance list queries and teacher/student search.
-    CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(date);
-    CREATE INDEX IF NOT EXISTS idx_attendance_subject_date ON attendance(subject_id, date);
-    CREATE INDEX IF NOT EXISTS idx_attendance_student_date ON attendance(student_id, date);
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_attendance_sessions_code_class_date ON attendance_sessions(code, class_id, session_date);
-    CREATE TABLE IF NOT EXISTS attendance_attempts (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-      student_id UUID REFERENCES students(id) ON DELETE SET NULL,
-      session_id UUID REFERENCES attendance_sessions(id) ON DELETE SET NULL,
-      session_code VARCHAR(20),
-      session_token VARCHAR(64),
-      status VARCHAR(20) NOT NULL CHECK (status IN ('pending','success','failed')),
-      error_code VARCHAR(100),
-      anomaly_info JSONB,
-      ip_address VARCHAR(50),
-      user_agent TEXT,
-      geo_lat DECIMAL(10,7),
-      geo_lng DECIMAL(10,7),
-      face_payload BOOLEAN DEFAULT false,
-      face_match BOOLEAN DEFAULT false,
-      face_confidence DECIMAL(5,4),
-      created_at TIMESTAMP DEFAULT NOW()
-    );
-    CREATE INDEX IF NOT EXISTS idx_attendance_attempts_student ON attendance_attempts(student_id, created_at DESC);
-    CREATE INDEX IF NOT EXISTS idx_attendance_attempts_session ON attendance_attempts(session_id, created_at DESC);
-    CREATE INDEX IF NOT EXISTS idx_attendance_attempts_status ON attendance_attempts(status);
-    CREATE INDEX IF NOT EXISTS idx_students_class_id ON students(class_id);
-    CREATE INDEX IF NOT EXISTS idx_students_student_id ON students(student_id);
-    CREATE INDEX IF NOT EXISTS idx_users_name ON users(name);
-    CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications(user_id, created_at DESC);
-  `);
-
-    await query(`INSERT INTO app_settings (key, value, updated_at)
-                 VALUES ('face_registration_required','false', NOW())
-                 ON CONFLICT (key) DO NOTHING`);
-
-    console.log('Database schema ready');
+    console.log('Database initialized and tables verified successfully! 🎉');
   } catch (error) {
     console.error('Database initialization failed:', error);
     throw error;
   }
 }
 
-async function withTransaction(fn) {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const result = await fn(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (err) {
-    await client.query('ROLLBACK');
-    throw err;
-  } finally {
-    client.release();
-  }
-}
-
-module.exports = { query, withTransaction, initDB };
+module.exports = { query, initDB };
